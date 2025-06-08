@@ -1,9 +1,13 @@
 package cmd
 
 type CompositionRoot struct {
+	configs Config
+
+	closers []Closer
 }
 
-func NewCompositionRoot(_ Config) CompositionRoot {
-	app := CompositionRoot{}
-	return app
+func NewCompositionRoot(configs Config) CompositionRoot {
+	return CompositionRoot{
+		configs: configs,
+	}
 }

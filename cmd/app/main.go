@@ -11,12 +11,14 @@ import (
 )
 
 func main() {
-	configs := getConfigs()
+	config := getConfigs()
 
-	app := cmd.NewCompositionRoot(
-		configs,
+	compositionRoot := cmd.NewCompositionRoot(
+		config,
 	)
-	startWebServer(app, configs.HttpPort)
+	defer compositionRoot.CloseAll()
+
+	startWebServer(compositionRoot, config.HttpPort)
 }
 
 func getConfigs() cmd.Config {
