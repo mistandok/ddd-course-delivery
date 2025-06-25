@@ -47,7 +47,7 @@ func goDotEnvVariable(key string) string {
 	return os.Getenv(key)
 }
 
-func startWebServer(_ cmd.CompositionRoot, port string) {
+func startWebServer(_ *cmd.CompositionRoot, port string) {
 	e := echo.New()
 	e.GET("/health", func(c echo.Context) error {
 		return c.String(http.StatusOK, "Healthy")

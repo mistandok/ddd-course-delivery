@@ -6,8 +6,8 @@ type CompositionRoot struct {
 	closers []Closer
 }
 
-func NewCompositionRoot(configs Config) CompositionRoot {
-	return CompositionRoot{
+func NewCompositionRoot(configs Config) *CompositionRoot {
+	return &CompositionRoot{
 		configs: configs,
 	}
 }
