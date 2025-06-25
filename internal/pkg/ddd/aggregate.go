@@ -1,25 +1,36 @@
 package ddd
 
 type BaseAggregate[ID comparable] struct {
-	*BaseEntity[ID]
+	baseEntity   *BaseEntity[ID]
 	domainEvents []DomainEvent
 }
 
 func NewBaseAggregate[ID comparable](id ID) *BaseAggregate[ID] {
 	return &BaseAggregate[ID]{
-		BaseEntity:   NewBaseEntity[ID](id),
+		baseEntity:   NewBaseEntity[ID](id),
 		domainEvents: make([]DomainEvent, 0),
 	}
 }
 
-func (a *BaseAggregate[ID]) ClearDomainEvents() {
-	a.domainEvents = []DomainEvent{}
+func (ba *BaseAggregate[ID]) ID() ID {
+	return ba.baseEntity.ID()
 }
 
-func (a *BaseAggregate[ID]) GetDomainEvents() []DomainEvent {
-	return a.domainEvents
+func (ba *BaseAggregate[ID]) Equal(other *BaseAggregate[ID]) bool {
+	if other == nil {
+		return false
+	}
+	return ba.baseEntity.Equal(other.baseEntity)
 }
 
-func (a *BaseAggregate[ID]) RaiseDomainEvent(event DomainEvent) {
-	a.domainEvents = append(a.domainEvents, event)
+func (ba *BaseAggregate[ID]) ClearDomainEvents() {
+	ba.domainEvents = []DomainEvent{}
+}
+
+func (ba *BaseAggregate[ID]) GetDomainEvents() []DomainEvent {
+	return ba.domainEvents
+}
+
+func (ba *BaseAggregate[ID]) RaiseDomainEvent(event DomainEvent) {
+	ba.domainEvents = append(ba.domainEvents, event)
 }

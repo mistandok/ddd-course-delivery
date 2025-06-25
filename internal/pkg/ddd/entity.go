@@ -10,13 +10,13 @@ func NewBaseEntity[ID comparable](id ID) *BaseEntity[ID] {
 	}
 }
 
-func (a *BaseEntity[ID]) ID() ID {
-	return a.id
+func (be *BaseEntity[ID]) ID() ID {
+	return be.id
 }
 
-func (a *BaseEntity[ID]) Equal(other *BaseEntity[ID]) bool {
+func (be *BaseEntity[ID]) Equal(other *BaseEntity[ID]) bool {
 	if other == nil {
 		return false
 	}
-	return a.id == other.id
+	return be.id == other.id
 }
