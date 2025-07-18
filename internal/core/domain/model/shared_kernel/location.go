@@ -71,7 +71,6 @@ func abs(x int64) int64 {
 }
 
 func randomInt64InRange(min, max int64) (int64, error) {
-	// функция локальная, если мы некорректно зададим диапазон, то, как мне кажется, лучше сразу падать с паникой, так как это прям критическая ошибка для приложения.
 	if min > max {
 		return 0, errs.NewValueIsInvalidErrorWithCause("min", fmt.Errorf("min is greater than max"))
 	}
