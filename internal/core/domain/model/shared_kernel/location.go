@@ -63,6 +63,7 @@ func (l location) DistanceTo(other location) int64 {
 	return abs(l.x-other.x) + abs(l.y-other.y)
 }
 
+// TODO: move to pkg if it will be used in other places
 func abs(x int64) int64 {
 	if x < 0 {
 		return -x
@@ -70,6 +71,7 @@ func abs(x int64) int64 {
 	return x
 }
 
+// TODO: move to pkg if it will be used in other places
 func randomInt64InRange(min, max int64) (int64, error) {
 	if min > max {
 		return 0, errs.NewValueIsInvalidErrorWithCause("min", fmt.Errorf("min is greater than max"))
