@@ -2,6 +2,7 @@ package shared_kernel
 
 import (
 	"delivery/internal/pkg/errs"
+	"fmt"
 	"math/rand/v2"
 )
 
@@ -29,8 +30,16 @@ func NewLocation(x int64, y int64) (location, error) {
 }
 
 func NewRandomLocation() (location, error) {
-	x := randomInt64InRange(minX, maxX)
-	y := randomInt64InRange(minY, maxY)
+	x, err := randomInt64InRange(minX, maxX)
+	if err != nil {
+		return location{}, err
+	}
+
+	y, err := randomInt64InRange(minY, maxY)
+	if err != nil {
+		return location{}, err
+	}
+
 	return NewLocation(x, y)
 }
 
@@ -61,10 +70,10 @@ func abs(x int64) int64 {
 	return x
 }
 
-func randomInt64InRange(min, max int64) int64 {
+func randomInt64InRange(min, max int64) (int64, error) {
 	// функция локальная, если мы некорректно зададим диапазон, то, как мне кажется, лучше сразу падать с паникой, так как это прям критическая ошибка для приложения.
 	if min > max {
-		panic("min is greater than max")
+		return 0, errs.NewValueIsInvalidErrorWithCause("min", fmt.Errorf("min is greater than max"))
 	}
-	return min + rand.Int64N(max-min+1)
+	return min + rand.Int64N(max-min+1), nil
 }
