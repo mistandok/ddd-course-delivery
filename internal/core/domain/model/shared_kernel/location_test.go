@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_Cant_Create_Location_Because_Coordinates_Out_Of_Range(t *testing.T) {
+func Test_Impossible_To_Create_Location_With_Coordinates_Out_Of_Range(t *testing.T) {
 	// Arrange
 	tests := []struct {
 		name string
@@ -57,7 +57,7 @@ func Test_Cant_Create_Location_Because_Coordinates_Out_Of_Range(t *testing.T) {
 	}
 }
 
-func Test_Two_Equal_Locations_Should_Be_Equal(t *testing.T) {
+func Test_Locations_With_Same_Coordinates_Should_Be_Equal(t *testing.T) {
 	// Arrange
 	location, _ := NewLocation(1, 1)
 	otherLocation, _ := NewLocation(1, 1)
@@ -69,7 +69,7 @@ func Test_Two_Equal_Locations_Should_Be_Equal(t *testing.T) {
 	assert.True(t, isEqual)
 }
 
-func Test_Two_Different_Locations_Should_Be_Different(t *testing.T) {
+func Test_Locations_With_Different_Coordinates_Should_Be_Different(t *testing.T) {
 	tests := []struct {
 		name   string
 		x      int64
