@@ -70,3 +70,21 @@ func (s *StoragePlace) CanStore(volume int64) bool {
 
 	return volume <= s.totalVolume
 }
+
+func (s *StoragePlace) Clear(orderID uuid.UUID) error {
+	if !s.IsOccupied() {
+		return nil
+	}
+
+	if *s.orderID != orderID {
+		return errs.NewObjectNotFoundError("order", orderID)
+	}
+
+	s.orderID = nil
+
+	return nil
+}
+
+func (s *StoragePlace) Equal(other StoragePlace) bool {
+	return s.id == other.id
+}

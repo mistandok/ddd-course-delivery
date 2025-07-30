@@ -127,3 +127,49 @@ func Test_Impossible_Store_Order_In_Storage_Place_When_Storage_Place_Is_Occupied
 	// Assert
 	assert.ErrorIs(t, err, errs.ErrValueIsInvalid)
 }
+
+func Test_If_Storage_Place_Is_Not_Occupied_Then_Can_Clear_Without_Problems(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	storagePlace, _ := NewStoragePlace(backpackName, allowedVolume)
+	orderID := uuid.New()
+
+	// Act
+	err := storagePlace.Clear(orderID)
+
+	// Assert
+	assert.NoError(t, err)
+}
+
+func Test_Impossible_Clear_Order_In_Storage_Place_When_Order_Is_Not_Stored(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	storagePlace, _ := NewStoragePlace(backpackName, allowedVolume)
+	firstOrderID := uuid.New()
+	secondOrderID := uuid.New()
+
+	// Act
+	_ = storagePlace.Store(firstOrderID, allowedVolume)
+	err := storagePlace.Clear(secondOrderID)
+
+	// Assert
+	assert.ErrorIs(t, err, errs.ErrObjectNotFound)
+}
+
+func Test_Clearing_Order_In_Storage_Place_When_Order_Is_Stored(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	storagePlace, _ := NewStoragePlace(backpackName, allowedVolume)
+	orderID := uuid.New()
+	orderVolume := allowedVolume
+
+	// Act
+	_ = storagePlace.Store(orderID, orderVolume)
+	err := storagePlace.Clear(orderID)
+
+	// Assert
+	assert.NoError(t, err)
+}
