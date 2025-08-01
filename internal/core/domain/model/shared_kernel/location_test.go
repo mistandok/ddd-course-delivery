@@ -118,7 +118,7 @@ func Test_Locations_With_Different_Coordinates_Should_Be_Different(t *testing.T)
 func Test_Correct_Distance_To_Other_Location(t *testing.T) {
 	tests := []struct {
 		name                                string
-		courierAndFinalDestinationLocations func() (location, location)
+		courierAndFinalDestinationLocations func() (Location, Location)
 		expectedDistance                    int64
 	}{
 		{
@@ -167,28 +167,28 @@ func Test_Random_Location_Should_Be_In_Range(t *testing.T) {
 	assert.True(t, location.Y() >= minY && location.Y() <= maxY)
 }
 
-func courierAndFinalDestinationIsSameLocation() (location, location) {
+func courierAndFinalDestinationIsSameLocation() (Location, Location) {
 	courierLocation, _ := NewLocation(1, 1)
 	finalDestinationLocation, _ := NewLocation(1, 1)
 
 	return courierLocation, finalDestinationLocation
 }
 
-func beetwenCourierAndFinalDestinationIsOneStepByX() (location, location) {
+func beetwenCourierAndFinalDestinationIsOneStepByX() (Location, Location) {
 	courierLocation, _ := NewLocation(1, 1)
 	finalDestinationLocation, _ := NewLocation(2, 1)
 
 	return courierLocation, finalDestinationLocation
 }
 
-func beetwenCourierAndFinalDestinationIsOneStepByY() (location, location) {
+func beetwenCourierAndFinalDestinationIsOneStepByY() (Location, Location) {
 	courierLocation, _ := NewLocation(1, 1)
 	finalDestinationLocation, _ := NewLocation(1, 2)
 
 	return courierLocation, finalDestinationLocation
 }
 
-func beetwenCourierAndFinalDestinationIsFiveStepsByXAndYInSummary() (location, location) {
+func beetwenCourierAndFinalDestinationIsFiveStepsByXAndYInSummary() (Location, Location) {
 	courierLocation, _ := NewLocation(4, 9)
 	finalDestinationLocation, _ := NewLocation(2, 6)
 

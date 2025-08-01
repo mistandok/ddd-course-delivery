@@ -3,9 +3,10 @@ package testcnts
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"time"
 )
 
 func StartPostgresContainer(ctx context.Context) (testcontainers.Container, string, error) {
