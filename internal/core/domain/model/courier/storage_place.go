@@ -15,16 +15,16 @@ type StoragePlace struct {
 	orderID     *uuid.UUID
 }
 
-func NewStoragePlace(name string, totalVolume int64) (StoragePlace, error) {
+func NewStoragePlace(name string, totalVolume int64) (*StoragePlace, error) {
 	if name == "" {
-		return StoragePlace{}, errs.NewValueIsInvalidError("name")
+		return nil, errs.NewValueIsInvalidError("name")
 	}
 
 	if totalVolume <= 0 {
-		return StoragePlace{}, errs.NewValueIsInvalidError("totalVolume")
+		return nil, errs.NewValueIsInvalidError("totalVolume")
 	}
 
-	storagePlace := StoragePlace{
+	storagePlace := &StoragePlace{
 		id:          uuid.New(),
 		name:        name,
 		totalVolume: totalVolume,
@@ -85,6 +85,10 @@ func (s *StoragePlace) Clear(orderID uuid.UUID) error {
 	return nil
 }
 
-func (s *StoragePlace) Equal(other StoragePlace) bool {
+func (s *StoragePlace) Equal(other *StoragePlace) bool {
+	if other == nil {
+		return false
+	}
+
 	return s.id == other.id
 }
