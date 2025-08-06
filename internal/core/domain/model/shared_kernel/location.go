@@ -11,55 +11,55 @@ const (
 	minY, maxY = 1, 10
 )
 
-type location struct {
+type Location struct {
 	x     int64
 	y     int64
 	isSet bool
 }
 
-func NewLocation(x int64, y int64) (location, error) {
+func NewLocation(x int64, y int64) (Location, error) {
 	if x < minX || x > maxX {
-		return location{}, errs.NewValueIsOutOfRangeError("x", x, minX, maxX)
+		return Location{}, errs.NewValueIsOutOfRangeError("x", x, minX, maxX)
 	}
 
 	if y < minY || y > maxY {
-		return location{}, errs.NewValueIsOutOfRangeError("y", y, minY, maxY)
+		return Location{}, errs.NewValueIsOutOfRangeError("y", y, minY, maxY)
 	}
 
-	return location{x: x, y: y, isSet: true}, nil
+	return Location{x: x, y: y, isSet: true}, nil
 }
 
-func NewRandomLocation() (location, error) {
+func NewRandomLocation() (Location, error) {
 	x, err := randomInt64InRange(minX, maxX)
 	if err != nil {
-		return location{}, err
+		return Location{}, err
 	}
 
 	y, err := randomInt64InRange(minY, maxY)
 	if err != nil {
-		return location{}, err
+		return Location{}, err
 	}
 
 	return NewLocation(x, y)
 }
 
-func (l location) X() int64 {
+func (l Location) X() int64 {
 	return l.x
 }
 
-func (l location) Y() int64 {
+func (l Location) Y() int64 {
 	return l.y
 }
 
-func (l location) IsSet() bool {
+func (l Location) IsSet() bool {
 	return l.isSet
 }
 
-func (l location) Equals(other location) bool {
+func (l Location) Equals(other Location) bool {
 	return l == other
 }
 
-func (l location) DistanceTo(other location) int64 {
+func (l Location) DistanceTo(other Location) int64 {
 	return abs(l.x-other.x) + abs(l.y-other.y)
 }
 
