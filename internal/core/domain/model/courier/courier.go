@@ -39,7 +39,11 @@ func NewCourier(name string, speed int64, location kernel.Location) (*Courier, e
 }
 
 func (c *Courier) Equals(other *Courier) bool {
-	return false
+	if other == nil {
+		return false
+	}
+
+	return c.id == other.id
 }
 
 func (c *Courier) ID() uuid.UUID {
@@ -73,6 +77,10 @@ func (c *Courier) AddStoragePlace(name string, volume int64) error {
 }
 
 func (c *Courier) CanTakeOrder(order *order.Order) bool {
+	if order == nil {
+		return false
+	}
+
 	for _, storagePlace := range c.storagePlaces {
 		if storagePlace.CanStore(order.Volume()) {
 			return true
@@ -82,6 +90,10 @@ func (c *Courier) CanTakeOrder(order *order.Order) bool {
 }
 
 func (c *Courier) TakeOrder(order *order.Order) error {
+	if order == nil {
+		return errs.NewValueIsInvalidErrorWithCause("order", errors.New("order is nil"))
+	}
+
 	if !c.CanTakeOrder(order) {
 		return errs.NewValueIsInvalidErrorWithCause("order", errors.New("courier has no storage place with enough volume"))
 	}
