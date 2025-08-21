@@ -148,7 +148,7 @@ func Test_Calculate_Time_To_Location(t *testing.T) {
 	courier, _ := NewCourier("John Doe", 2, startLocation)
 
 	// Act
-	time, _ := courier.CalculateTimeToLocation(targetLocation)
+	time := courier.CalculateTimeToLocation(targetLocation)
 
 	// Assert
 	assert.GreaterOrEqual(t, time, 4.0)

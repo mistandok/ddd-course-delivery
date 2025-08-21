@@ -29,6 +29,10 @@ func NewCourier(name string, speed int64, location kernel.Location) (*Courier, e
 		return nil, err
 	}
 
+	if speed <= 0 {
+		return nil, errs.NewValueIsInvalidErrorWithCause("speed", errors.New("speed must be greater than 0"))
+	}
+
 	return &Courier{
 		id:            uuid.New(),
 		name:          name,
@@ -123,9 +127,9 @@ func (c *Courier) CompleteOrder(order *order.Order) error {
 	return nil
 }
 
-func (c *Courier) CalculateTimeToLocation(target kernel.Location) (float64, error) {
+func (c *Courier) CalculateTimeToLocation(target kernel.Location) float64 {
 	distance := c.location.DistanceTo(target)
-	return float64(distance) / float64(c.speed), nil
+	return float64(distance) / float64(c.speed)
 }
 
 func (c *Courier) Move(target kernel.Location) error {
