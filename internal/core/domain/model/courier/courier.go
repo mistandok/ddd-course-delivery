@@ -21,6 +21,7 @@ type Courier struct {
 	speed         int64
 	location      kernel.Location
 	storagePlaces []*StoragePlace
+	version       int64
 }
 
 func NewCourier(name string, speed int64, location kernel.Location) (*Courier, error) {
@@ -40,6 +41,17 @@ func NewCourier(name string, speed int64, location kernel.Location) (*Courier, e
 		location:      location,
 		storagePlaces: []*StoragePlace{storagePlace},
 	}, nil
+}
+
+func LoadCourierFromRepo(id uuid.UUID, name string, speed int64, location kernel.Location, storagePlaces []*StoragePlace, version int64) *Courier {
+	return &Courier{
+		id:            id,
+		name:          name,
+		speed:         speed,
+		location:      location,
+		storagePlaces: storagePlaces,
+		version:       version,
+	}
 }
 
 func (c *Courier) Equals(other *Courier) bool {
@@ -68,6 +80,10 @@ func (c *Courier) Location() kernel.Location {
 
 func (c *Courier) StoragePlaces() []*StoragePlace {
 	return c.storagePlaces
+}
+
+func (c *Courier) Version() int64 {
+	return c.version
 }
 
 func (c *Courier) AddStoragePlace(name string, volume int64) error {
