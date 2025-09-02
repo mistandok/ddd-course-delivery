@@ -36,7 +36,6 @@ func (r *Repository) getFreeCouriersDTO(ctx context.Context, tx trmsqlx.Tr) ([]C
 		From("courier c").
 		Join("storage_place sp ON c.id = sp.courier_id").
 		Where("sp.order_id IS NULL").
-		GroupBy("c.id", "c.name", "c.speed", "c.location", "c.version").
 		PlaceholderFormat(squirrel.Dollar).
 		ToSql()
 	if err != nil {

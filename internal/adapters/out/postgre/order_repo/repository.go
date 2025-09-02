@@ -4,8 +4,6 @@ import (
 	"context"
 	"delivery/internal/core/ports"
 
-	modelOrder "delivery/internal/core/domain/model/order"
-
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 	"github.com/jmoiron/sqlx"
 )
@@ -26,8 +24,4 @@ func NewRepository(db *sqlx.DB, txGetter txGetter) *Repository {
 		db:       db,
 		txGetter: txGetter,
 	}
-}
-
-func (r *Repository) GetAllInAssignedStatus(ctx context.Context) ([]*modelOrder.Order, error) {
-	return nil, nil
 }

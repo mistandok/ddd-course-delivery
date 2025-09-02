@@ -35,10 +35,18 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("failed to start postgres container: %v", err)
 	}
-	defer postgresContainer.Terminate(ctx)
+	defer func() {
+		if err := postgresContainer.Terminate(ctx); err != nil {
+			log.Fatalf("failed to terminate postgres container: %v", err)
+		}
+	}()
 
 	db, trManager := setupDbEntities(containerDBURL)
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Fatalf("failed to close db: %v", err)
+		}
+	}()
 
 	orderRepo := order_repo.NewRepository(db, trmsqlx.DefaultCtxGetter)
 	courierRepo := courier_repo.NewRepository(db, trmsqlx.DefaultCtxGetter)
@@ -169,6 +177,36 @@ func Test_OrderRepoShouldGetFirstInCreatedStatus(t *testing.T) {
 	assert.Equal(t, oldestOrder.ID(), gettedOrder.ID())
 }
 
+func Test_OrderRepoShouldGetAllInAssignedStatus(t *testing.T) {
+	// Arrange
+	randomLocation, _ := shared_kernel.NewRandomLocation()
+	assignedOrder, _ := modelOrder.NewOrder(uuid.New(), randomLocation, 5)
+	order, _ := modelOrder.NewOrder(uuid.New(), randomLocation, 5)
+	courier, _ := modelCourier.NewCourier("test", 10, randomLocation)
+	_ = assignedOrder.Assign(courier.ID())
+	// Добавляем курьера
+	_ = uow.Do(context.Background(), func(ctx context.Context) error {
+		_ = uow.CourierRepo().Add(ctx, courier)
+
+		return nil
+	})
+	// Добавляем заказы
+	_ = uow.Do(context.Background(), func(ctx context.Context) error {
+		_ = uow.OrderRepo().Add(ctx, assignedOrder)
+		_ = uow.OrderRepo().Add(ctx, order)
+
+		return nil
+	})
+
+	// Act
+	gettedOrders, err := uow.OrderRepo().GetAllInAssignedStatus(context.Background())
+
+	// Assert
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(gettedOrders))
+	assert.Equal(t, assignedOrder.ID(), gettedOrders[0].ID())
+}
+
 func Test_CourierRepoShouldAddCourier(t *testing.T) {
 	// Arrange
 	randomLocation, _ := shared_kernel.NewRandomLocation()
@@ -201,6 +239,7 @@ func Test_CourierRepoShouldGetCourier(t *testing.T) {
 	assert.Equal(t, courier.Speed(), gettedCourier.Speed())
 	assert.Equal(t, courier.Location(), gettedCourier.Location())
 	assert.Equal(t, courier.Version(), gettedCourier.Version())
+	assert.Equal(t, courier.StoragePlaces(), gettedCourier.StoragePlaces())
 }
 
 func Test_CourierRepoShouldUpdateCourier(t *testing.T) {
@@ -254,4 +293,30 @@ func Test_CourierRepoImpossibleToUpdateCourierWhenSomeoneElseUpdatedIt(t *testin
 
 	// Assert
 	assert.ErrorIs(t, err, errs.ErrVersionIsInvalid)
+}
+
+func Test_CourierRepoShouldGetAllFreeCouriers(t *testing.T) {
+	// Arrange
+	randomLocation, _ := shared_kernel.NewRandomLocation()
+	courierThatTakeOrder, _ := modelCourier.NewCourier("test", 10, randomLocation)
+	freeCourier, _ := modelCourier.NewCourier("test", 10, randomLocation)
+	order, _ := modelOrder.NewOrder(uuid.New(), randomLocation, 5)
+	_ = courierThatTakeOrder.TakeOrder(order)
+
+	// Добавляем заказ, свободного курьера и курьера, который взял заказ
+	_ = uow.Do(context.Background(), func(ctx context.Context) error {
+		_ = uow.OrderRepo().Add(ctx, order)
+		_ = uow.CourierRepo().Add(ctx, freeCourier)
+		_ = uow.CourierRepo().Add(ctx, courierThatTakeOrder)
+
+		return nil
+	})
+
+	// Act
+	gettedCouriers, err := uow.CourierRepo().GetAllFreeCouriers(context.Background())
+
+	// Assert
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(gettedCouriers))
+	assert.Equal(t, freeCourier.ID(), gettedCouriers[0].ID())
 }
