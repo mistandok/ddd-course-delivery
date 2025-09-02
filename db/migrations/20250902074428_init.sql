@@ -3,23 +3,25 @@
 create table if not exists courier (
     id uuid primary key,
     name text not null,
-    speed int not null,
-    location point not null
+    speed bigint not null,
+    location point not null,
+    version bigint not null
 );
 
 create table if not exists "order" (
     id uuid primary key,
     courier_id uuid references courier(id),
     location point not null,
-    volume int not null,
-    status text not null
+    volume bigint not null,
+    status text not null,
+    version bigint not null
 );
 
 create table if not exists storage_place (
     id uuid primary key,
     order_id uuid references "order"(id),
     courier_id uuid references courier(id) not null,
-    volume int not null,
+    volume bigint not null,
     name text not null
 );
 -- +goose StatementEnd

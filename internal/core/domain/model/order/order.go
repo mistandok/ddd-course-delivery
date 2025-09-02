@@ -14,6 +14,7 @@ type Order struct {
 	location  shared_kernel.Location
 	volume    int64
 	status    Status
+	version   int64
 }
 
 func NewOrder(orderID uuid.UUID, location shared_kernel.Location, volume int64) (*Order, error) {
@@ -53,6 +54,10 @@ func (o *Order) CourierID() *uuid.UUID {
 
 func (o *Order) Status() Status {
 	return o.status
+}
+
+func (o *Order) Version() int64 {
+	return o.version
 }
 
 func (o *Order) Assign(courierID uuid.UUID) error {
