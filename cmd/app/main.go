@@ -1,59 +1,30 @@
 package main
 
 import (
-	"delivery/cmd"
-	"fmt"
-	"net/http"
-	"os"
+	"context"
+	"delivery/internal/app"
+	"flag"
 
-	"github.com/joho/godotenv"
-	"github.com/labstack/echo/v4"
 	"github.com/labstack/gommon/log"
 )
 
+var confitPath string
+
+func init() {
+	flag.StringVar(&confitPath, "config", ".env", "path to config file")
+	flag.Parse()
+}
+
 func main() {
-	config := getConfigs()
+	ctx := context.Background()
 
-	compositionRoot := cmd.NewCompositionRoot(
-		config,
-	)
-	defer compositionRoot.CloseAll()
-
-	startWebServer(compositionRoot, config.HttpPort)
-}
-
-func getConfigs() cmd.Config {
-	config := cmd.Config{
-		HttpPort:                  goDotEnvVariable("HTTP_PORT"),
-		DbHost:                    goDotEnvVariable("DB_HOST"),
-		DbPort:                    goDotEnvVariable("DB_PORT"),
-		DbUser:                    goDotEnvVariable("DB_USER"),
-		DbPassword:                goDotEnvVariable("DB_PASSWORD"),
-		DbName:                    goDotEnvVariable("DB_NAME"),
-		DbSslMode:                 goDotEnvVariable("DB_SSLMODE"),
-		GeoServiceGrpcHost:        goDotEnvVariable("GEO_SERVICE_GRPC_HOST"),
-		KafkaHost:                 goDotEnvVariable("KAFKA_HOST"),
-		KafkaConsumerGroup:        goDotEnvVariable("KAFKA_CONSUMER_GROUP"),
-		KafkaBasketConfirmedTopic: goDotEnvVariable("KAFKA_BASKET_CONFIRMED_TOPIC"),
-		KafkaOrderChangedTopic:    goDotEnvVariable("KAFKA_ORDER_CHANGED_TOPIC"),
-	}
-	return config
-}
-
-func goDotEnvVariable(key string) string {
-	err := godotenv.Load(".env")
+	application, err := app.NewApp(ctx, confitPath)
 	if err != nil {
-		log.Fatalf("Error loading .env file")
+		log.Fatalf("failed to create application: %v", err)
 	}
-	return os.Getenv(key)
-}
 
-func startWebServer(_ *cmd.CompositionRoot, port string) {
-	e := echo.New()
-	e.GET("/health", func(c echo.Context) error {
-		return c.String(http.StatusOK, "Healthy")
-	})
-
-	e.Logger.Fatal(e.Start(fmt.Sprintf("0.0.0.0:%s", port)))
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
+	err = application.Run()
+	if err != nil {
+		log.Fatalf("failed to run application: %v", err)
+	}
 }
