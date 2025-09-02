@@ -7,7 +7,7 @@ create table if not exists courier (
     location point not null
 );
 
-create table if not exists order (
+create table if not exists "order" (
     id uuid primary key,
     courier_id uuid references courier(id),
     location point not null,
@@ -17,7 +17,7 @@ create table if not exists order (
 
 create table if not exists storage_place (
     id uuid primary key,
-    order_id uuid references order(id),
+    order_id uuid references "order"(id),
     courier_id uuid references courier(id) not null,
     volume int not null,
     name text not null
