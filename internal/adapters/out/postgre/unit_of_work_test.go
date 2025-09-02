@@ -63,7 +63,25 @@ func setupDbEntities(dbURL string) (*sqlx.DB, *manager.Manager) {
 	return db, trManager
 }
 
+func cleanupDB(t *testing.T) {
+	t.Helper()
+	t.Cleanup(func() {
+		db, err := sqlx.Connect("postgres", dbURL)
+		if err != nil {
+			t.Fatalf("failed to connect to db for cleanup: %v", err)
+		}
+		defer db.Close()
+
+		// Очищаем таблицы в правильном порядке (из-за внешних ключей)
+		_, err = db.Exec("TRUNCATE TABLE storage_place, \"order\", courier RESTART IDENTITY CASCADE")
+		if err != nil {
+			t.Fatalf("failed to cleanup database: %v", err)
+		}
+	})
+}
+
 func Test_OrderRepoShouldAddOrder(t *testing.T) {
+	cleanupDB(t)
 	// Arrange
 	randomLocation, _ := shared_kernel.NewRandomLocation()
 	order, _ := modelOrder.NewOrder(uuid.New(), randomLocation, 5)
@@ -78,6 +96,7 @@ func Test_OrderRepoShouldAddOrder(t *testing.T) {
 }
 
 func Test_OrderRepoShouldGetOrder(t *testing.T) {
+	cleanupDB(t)
 	// Arrange
 	randomLocation, _ := shared_kernel.NewRandomLocation()
 	order, _ := modelOrder.NewOrder(uuid.New(), randomLocation, 5)
@@ -99,6 +118,7 @@ func Test_OrderRepoShouldGetOrder(t *testing.T) {
 }
 
 func Test_OrderRepoShouldUpdateOrder(t *testing.T) {
+	cleanupDB(t)
 	// Arrange
 	randomLocation, _ := shared_kernel.NewRandomLocation()
 	order, _ := modelOrder.NewOrder(uuid.New(), randomLocation, 5)
@@ -117,6 +137,7 @@ func Test_OrderRepoShouldUpdateOrder(t *testing.T) {
 }
 
 func Test_ImpossibleToUpdateOrderWhenItNotExists(t *testing.T) {
+	cleanupDB(t)
 	// Arrange
 	randomLocation, _ := shared_kernel.NewRandomLocation()
 	order, _ := modelOrder.NewOrder(uuid.New(), randomLocation, 5)
@@ -131,6 +152,7 @@ func Test_ImpossibleToUpdateOrderWhenItNotExists(t *testing.T) {
 }
 
 func Test_ImpossobleToUpdateOrderWhenSomeoneElseUpdatedIt(t *testing.T) {
+	cleanupDB(t)
 	// Arrange
 	randomLocation, _ := shared_kernel.NewRandomLocation()
 	order, _ := modelOrder.NewOrder(uuid.New(), randomLocation, 5)
@@ -154,6 +176,7 @@ func Test_ImpossobleToUpdateOrderWhenSomeoneElseUpdatedIt(t *testing.T) {
 }
 
 func Test_OrderRepoShouldGetFirstInCreatedStatus(t *testing.T) {
+	cleanupDB(t)
 	// Arrange
 	randomLocation, _ := shared_kernel.NewRandomLocation()
 	oldestOrder, _ := modelOrder.NewOrder(uuid.New(), randomLocation, 5)
@@ -174,6 +197,7 @@ func Test_OrderRepoShouldGetFirstInCreatedStatus(t *testing.T) {
 }
 
 func Test_OrderRepoShouldGetAllInAssignedStatus(t *testing.T) {
+	cleanupDB(t)
 	// Arrange
 	randomLocation, _ := shared_kernel.NewRandomLocation()
 	assignedOrder, _ := modelOrder.NewOrder(uuid.New(), randomLocation, 5)
@@ -204,6 +228,7 @@ func Test_OrderRepoShouldGetAllInAssignedStatus(t *testing.T) {
 }
 
 func Test_CourierRepoShouldAddCourier(t *testing.T) {
+	cleanupDB(t)
 	// Arrange
 	randomLocation, _ := shared_kernel.NewRandomLocation()
 	courier, _ := modelCourier.NewCourier("test", 10, randomLocation)
@@ -218,6 +243,7 @@ func Test_CourierRepoShouldAddCourier(t *testing.T) {
 }
 
 func Test_CourierRepoShouldGetCourier(t *testing.T) {
+	cleanupDB(t)
 	// Arrange
 	randomLocation, _ := shared_kernel.NewRandomLocation()
 	courier, _ := modelCourier.NewCourier("test", 10, randomLocation)
@@ -239,6 +265,7 @@ func Test_CourierRepoShouldGetCourier(t *testing.T) {
 }
 
 func Test_CourierRepoShouldUpdateCourier(t *testing.T) {
+	cleanupDB(t)
 	// Arrange
 	randomLocation, _ := shared_kernel.NewRandomLocation()
 	courier, _ := modelCourier.NewCourier("test", 10, randomLocation)
@@ -256,6 +283,7 @@ func Test_CourierRepoShouldUpdateCourier(t *testing.T) {
 }
 
 func Test_CourierRepoImpossibleToUpdateCourierWhenItNotExists(t *testing.T) {
+	cleanupDB(t)
 	// Arrange
 	randomLocation, _ := shared_kernel.NewRandomLocation()
 	courier, _ := modelCourier.NewCourier("test", 10, randomLocation)
@@ -270,6 +298,7 @@ func Test_CourierRepoImpossibleToUpdateCourierWhenItNotExists(t *testing.T) {
 }
 
 func Test_CourierRepoImpossibleToUpdateCourierWhenSomeoneElseUpdatedIt(t *testing.T) {
+	cleanupDB(t)
 	// Arrange
 	randomLocation, _ := shared_kernel.NewRandomLocation()
 	courier, _ := modelCourier.NewCourier("test", 10, randomLocation)
@@ -292,6 +321,7 @@ func Test_CourierRepoImpossibleToUpdateCourierWhenSomeoneElseUpdatedIt(t *testin
 }
 
 func Test_CourierRepoShouldGetAllFreeCouriers(t *testing.T) {
+	cleanupDB(t)
 	// Arrange
 	randomLocation, _ := shared_kernel.NewRandomLocation()
 	courierThatTakeOrder, _ := modelCourier.NewCourier("test", 10, randomLocation)
