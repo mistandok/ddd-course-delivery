@@ -36,6 +36,18 @@ func NewOrder(orderID uuid.UUID, location shared_kernel.Location, volume int64) 
 	}, nil
 }
 
+// LoadOrderFromRepo - загружает заказ из репозитория. Можно использовать ТОЛЬКО для загрузки из репозитория.
+func LoadOrderFromRepo(orderID uuid.UUID, courierID *uuid.UUID, location shared_kernel.Location, volume int64, status Status, version int64) (*Order, error) {
+	return &Order{
+		id:        orderID,
+		courierID: courierID,
+		location:  location,
+		volume:    volume,
+		status:    status,
+		version:   version,
+	}, nil
+}
+
 func (o *Order) ID() uuid.UUID {
 	return o.id
 }

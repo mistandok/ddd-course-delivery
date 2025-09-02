@@ -68,3 +68,24 @@ func Test_OrderRepoShouldAddOrder(t *testing.T) {
 	// Assert
 	assert.NoError(t, err)
 }
+
+func TestOrderRepoShouldGetOrder(t *testing.T) {
+	// Arrange
+	randomLocation, _ := shared_kernel.NewRandomLocation()
+	order, _ := modelOrder.NewOrder(uuid.New(), randomLocation, 5)
+	_ = uow.Do(context.Background(), func(ctx context.Context) error {
+		return uow.OrderRepo().Add(ctx, order)
+	})
+
+	// Act
+	gettedOrder, err := uow.OrderRepo().Get(context.Background(), order.ID())
+
+	// Assert
+	assert.NoError(t, err)
+	assert.Equal(t, order.ID(), gettedOrder.ID())
+	assert.Equal(t, order.Location(), gettedOrder.Location())
+	assert.Equal(t, order.Volume(), gettedOrder.Volume())
+	assert.Equal(t, order.Status(), gettedOrder.Status())
+	assert.Equal(t, order.CourierID(), gettedOrder.CourierID())
+	assert.Equal(t, order.Version(), gettedOrder.Version())
+}

@@ -14,6 +14,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+// SetupTestEnviroment - у меня Docker не по стандартному сокету слушается, нужно указать свой. Из-за особенностей lima таже нужно отключить ryuk
 func SetupTestEnvironment() {
 	os.Setenv("DOCKER_HOST", "unix:///Users/akartikov/.lima/avito/sock/docker.sock")
 	os.Setenv("TESTCONTAINERS_RYUK_DISABLED", "true")
