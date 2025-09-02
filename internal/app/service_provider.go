@@ -64,7 +64,7 @@ func (s *serviceProvider) TRManager() *manager.Manager {
 
 func (s *serviceProvider) UOW() ports.UnitOfWork {
 	if s.uow == nil {
-		s.uow = postgre.NewUnitOfWork(s.DB(), s.TRManager())
+		s.uow = postgre.NewUnitOfWork(s.DB(), s.TRManager(), trmsqlx.DefaultCtxGetter)
 	}
 
 	return s.uow
