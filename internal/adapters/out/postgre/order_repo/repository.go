@@ -28,10 +28,6 @@ func NewRepository(db *sqlx.DB, txGetter txGetter) *Repository {
 	}
 }
 
-func (r *Repository) GetFirstInCreatedStatus(ctx context.Context) (*modelOrder.Order, error) {
-	return nil, nil
-}
-
 func (r *Repository) GetAllInAssignedStatus(ctx context.Context) ([]*modelOrder.Order, error) {
 	return nil, nil
 }

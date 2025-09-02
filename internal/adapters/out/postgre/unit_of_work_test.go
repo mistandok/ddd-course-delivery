@@ -145,3 +145,23 @@ func Test_ImpossobleToUpdateOrderWhenSomeoneElseUpdatedIt(t *testing.T) {
 	// Assert
 	assert.ErrorIs(t, err, errs.ErrVersionIsInvalid)
 }
+
+func Test_OrderRepoShouldGetFirstInCreatedStatus(t *testing.T) {
+	// Arrange
+	randomLocation, _ := shared_kernel.NewRandomLocation()
+	oldestOrder, _ := modelOrder.NewOrder(uuid.New(), randomLocation, 5)
+	youngestOrder, _ := modelOrder.NewOrder(uuid.New(), randomLocation, 5)
+	_ = uow.Do(context.Background(), func(ctx context.Context) error {
+		_ = uow.OrderRepo().Add(ctx, oldestOrder)
+		_ = uow.OrderRepo().Add(ctx, youngestOrder)
+
+		return nil
+	})
+
+	// Act
+	gettedOrder, err := uow.OrderRepo().GetFirstInCreatedStatus(context.Background())
+
+	// Assert
+	assert.NoError(t, err)
+	assert.Equal(t, oldestOrder.ID(), gettedOrder.ID())
+}
