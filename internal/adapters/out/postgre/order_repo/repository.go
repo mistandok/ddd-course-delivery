@@ -36,16 +36,17 @@ func (r *Repository) Add(ctx context.Context, order *modelOrder.Order) error {
 
 	orderDTO := DomainToDTO(order)
 
-	sql, args, err := squirrel.Insert("order").
+	sql, args, err := squirrel.Insert(`"order"`).
 		Columns("id", "courier_id", "location", "volume", "status", "version").
 		Values(
 			orderDTO.ID,
 			orderDTO.CourierID,
-			orderDTO.Location.String(),
+			squirrel.Expr("POINT(?, ?)", orderDTO.Location.X, orderDTO.Location.Y),
 			orderDTO.Volume,
 			orderDTO.Status,
 			orderDTO.Version,
 		).
+		PlaceholderFormat(squirrel.Dollar).
 		ToSql()
 	if err != nil {
 		return err

@@ -2,10 +2,11 @@ package app
 
 import (
 	"delivery/internal/adapters/out/postgre"
+	"delivery/internal/adapters/out/postgre/order_repo"
 	"delivery/internal/config"
 	"delivery/internal/config/env"
 	"delivery/internal/core/ports"
-	"delivery/pkg/closer"
+	"delivery/internal/pkg/closer"
 	"log"
 
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
@@ -18,6 +19,7 @@ type serviceProvider struct {
 	db        *sqlx.DB
 	trManager *manager.Manager
 	uow       ports.UnitOfWork
+	orderRepo ports.OrderRepo
 }
 
 func newServiceProvider() *serviceProvider {
@@ -62,9 +64,17 @@ func (s *serviceProvider) TRManager() *manager.Manager {
 	return s.trManager
 }
 
+func (s *serviceProvider) OrderRepo() ports.OrderRepo {
+	if s.orderRepo == nil {
+		s.orderRepo = order_repo.NewRepository(s.DB(), trmsqlx.DefaultCtxGetter)
+	}
+
+	return s.orderRepo
+}
+
 func (s *serviceProvider) UOW() ports.UnitOfWork {
 	if s.uow == nil {
-		s.uow = postgre.NewUnitOfWork(s.DB(), s.TRManager(), trmsqlx.DefaultCtxGetter)
+		s.uow = postgre.NewUnitOfWork(s.DB(), s.TRManager(), trmsqlx.DefaultCtxGetter, s.OrderRepo())
 	}
 
 	return s.uow

@@ -3,7 +3,7 @@ package app
 import (
 	"context"
 	"delivery/internal/config"
-	"delivery/pkg/closer"
+	"delivery/internal/pkg/closer"
 	"log"
 	"sync"
 )

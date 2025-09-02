@@ -19,13 +19,15 @@ type UnitOfWork struct {
 	db        *sqlx.DB
 	trManager *manager.Manager
 	txGetter  TxGetter
+	orderRepo ports.OrderRepo
 }
 
-func NewUnitOfWork(db *sqlx.DB, trManager *manager.Manager, txGetter TxGetter) ports.UnitOfWork {
+func NewUnitOfWork(db *sqlx.DB, trManager *manager.Manager, txGetter TxGetter, orderRepo ports.OrderRepo) ports.UnitOfWork {
 	return &UnitOfWork{
 		db:        db,
 		trManager: trManager,
 		txGetter:  txGetter,
+		orderRepo: orderRepo,
 	}
 }
 
@@ -35,4 +37,8 @@ func (u *UnitOfWork) Do(ctx context.Context, fn func(ctx context.Context) error)
 
 func (u *UnitOfWork) DefaultTrOrDB(ctx context.Context, db trmsqlx.Tr) trmsqlx.Tr {
 	return u.txGetter.DefaultTrOrDB(ctx, db)
+}
+
+func (u *UnitOfWork) OrderRepo() ports.OrderRepo {
+	return u.orderRepo
 }
