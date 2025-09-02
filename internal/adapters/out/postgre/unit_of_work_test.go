@@ -4,6 +4,7 @@ import (
 	"context"
 	"delivery/internal/adapters/out/postgre/order_repo"
 	"delivery/internal/core/ports"
+	"delivery/internal/pkg/errs"
 	"delivery/internal/pkg/testcnts"
 	"log"
 	"os"
@@ -69,7 +70,7 @@ func Test_OrderRepoShouldAddOrder(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestOrderRepoShouldGetOrder(t *testing.T) {
+func Test_OrderRepoShouldGetOrder(t *testing.T) {
 	// Arrange
 	randomLocation, _ := shared_kernel.NewRandomLocation()
 	order, _ := modelOrder.NewOrder(uuid.New(), randomLocation, 5)
@@ -88,4 +89,59 @@ func TestOrderRepoShouldGetOrder(t *testing.T) {
 	assert.Equal(t, order.Status(), gettedOrder.Status())
 	assert.Equal(t, order.CourierID(), gettedOrder.CourierID())
 	assert.Equal(t, order.Version(), gettedOrder.Version())
+}
+
+func Test_OrderRepoShouldUpdateOrder(t *testing.T) {
+	// Arrange
+	randomLocation, _ := shared_kernel.NewRandomLocation()
+	order, _ := modelOrder.NewOrder(uuid.New(), randomLocation, 5)
+	_ = uow.Do(context.Background(), func(ctx context.Context) error {
+		return uow.OrderRepo().Add(ctx, order)
+	})
+
+	// Act
+	// Ничего не обновляем в заказе, просто пытаемся его обновить как есть
+	err := uow.Do(context.Background(), func(ctx context.Context) error {
+		return uow.OrderRepo().Update(ctx, order)
+	})
+
+	// Assert
+	assert.NoError(t, err)
+}
+
+func Test_ImpossibleToUpdateOrderWhenItNotExists(t *testing.T) {
+	// Arrange
+	randomLocation, _ := shared_kernel.NewRandomLocation()
+	order, _ := modelOrder.NewOrder(uuid.New(), randomLocation, 5)
+
+	// Act
+	err := uow.Do(context.Background(), func(ctx context.Context) error {
+		return uow.OrderRepo().Update(ctx, order)
+	})
+
+	// Assert
+	assert.ErrorIs(t, err, errs.ErrObjectNotFound)
+}
+
+func Test_ImpossobleToUpdateOrderWhenSomeoneElseUpdatedIt(t *testing.T) {
+	// Arrange
+	randomLocation, _ := shared_kernel.NewRandomLocation()
+	order, _ := modelOrder.NewOrder(uuid.New(), randomLocation, 5)
+	// Добавляем заказ
+	_ = uow.Do(context.Background(), func(ctx context.Context) error {
+		return uow.OrderRepo().Add(ctx, order)
+	})
+	// Обновляем заказ (предположим, что это сделал другой поток)
+	_ = uow.Do(context.Background(), func(ctx context.Context) error {
+		return uow.OrderRepo().Update(ctx, order)
+	})
+
+	// Act
+	// Пытаемся обновить заказ, который обновили в другом треде
+	err := uow.Do(context.Background(), func(ctx context.Context) error {
+		return uow.OrderRepo().Update(ctx, order)
+	})
+
+	// Assert
+	assert.ErrorIs(t, err, errs.ErrVersionIsInvalid)
 }
