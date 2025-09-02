@@ -1,8 +1,10 @@
 package app
 
 import (
+	"delivery/internal/adapters/out/postgre"
 	"delivery/internal/config"
 	"delivery/internal/config/env"
+	"delivery/internal/core/ports"
 	"delivery/pkg/closer"
 	"log"
 
@@ -15,6 +17,7 @@ type serviceProvider struct {
 	pgConfig  *config.PgConfig
 	db        *sqlx.DB
 	trManager *manager.Manager
+	uow       ports.UnitOfWork
 }
 
 func newServiceProvider() *serviceProvider {
@@ -57,4 +60,12 @@ func (s *serviceProvider) TRManager() *manager.Manager {
 	}
 
 	return s.trManager
+}
+
+func (s *serviceProvider) UOW() ports.UnitOfWork {
+	if s.uow == nil {
+		s.uow = postgre.NewUnitOfWork(s.DB(), s.TRManager())
+	}
+
+	return s.uow
 }

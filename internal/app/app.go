@@ -63,6 +63,7 @@ func (a *App) Run() error {
 func (a *App) initDeps(ctx context.Context) error {
 	initDepFunctions := []func(context.Context) error{
 		a.initConfig,
+		a.initServiceProvider,
 	}
 
 	for _, f := range initDepFunctions {
@@ -80,6 +81,11 @@ func (a *App) initConfig(_ context.Context) error {
 		return err
 	}
 
+	return nil
+}
+
+func (a *App) initServiceProvider(_ context.Context) error {
+	a.serviceProvider = newServiceProvider()
 	return nil
 }
 
