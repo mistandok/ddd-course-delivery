@@ -2,6 +2,7 @@ package postgre
 
 import (
 	"context"
+	"delivery/internal/adapters/out/postgre/courier_repo"
 	"delivery/internal/adapters/out/postgre/order_repo"
 	"delivery/internal/core/ports"
 	"delivery/internal/pkg/errs"
@@ -10,6 +11,7 @@ import (
 	"os"
 	"testing"
 
+	modelCourier "delivery/internal/core/domain/model/courier"
 	modelOrder "delivery/internal/core/domain/model/order"
 	"delivery/internal/core/domain/model/shared_kernel"
 
@@ -39,7 +41,8 @@ func TestMain(m *testing.M) {
 	defer db.Close()
 
 	orderRepo := order_repo.NewRepository(db, trmsqlx.DefaultCtxGetter)
-	uow = NewUnitOfWork(db, trManager, trmsqlx.DefaultCtxGetter, orderRepo)
+	courierRepo := courier_repo.NewRepository(db, trmsqlx.DefaultCtxGetter)
+	uow = NewUnitOfWork(db, trManager, trmsqlx.DefaultCtxGetter, orderRepo, courierRepo)
 
 	dbURL = containerDBURL
 
@@ -164,4 +167,38 @@ func Test_OrderRepoShouldGetFirstInCreatedStatus(t *testing.T) {
 	// Assert
 	assert.NoError(t, err)
 	assert.Equal(t, oldestOrder.ID(), gettedOrder.ID())
+}
+
+func Test_CourierRepoShouldAddCourier(t *testing.T) {
+	// Arrange
+	randomLocation, _ := shared_kernel.NewRandomLocation()
+	courier, _ := modelCourier.NewCourier("test", 10, randomLocation)
+
+	// Act
+	err := uow.Do(context.Background(), func(ctx context.Context) error {
+		return uow.CourierRepo().Add(ctx, courier)
+	})
+
+	// Assert
+	assert.NoError(t, err)
+}
+
+func Test_CourierRepoShouldGetCourier(t *testing.T) {
+	// Arrange
+	randomLocation, _ := shared_kernel.NewRandomLocation()
+	courier, _ := modelCourier.NewCourier("test", 10, randomLocation)
+	_ = uow.Do(context.Background(), func(ctx context.Context) error {
+		return uow.CourierRepo().Add(ctx, courier)
+	})
+
+	// Act
+	gettedCourier, err := uow.CourierRepo().Get(context.Background(), courier.ID())
+
+	// Assert
+	assert.NoError(t, err)
+	assert.Equal(t, courier.ID(), gettedCourier.ID())
+	assert.Equal(t, courier.Name(), gettedCourier.Name())
+	assert.Equal(t, courier.Speed(), gettedCourier.Speed())
+	assert.Equal(t, courier.Location(), gettedCourier.Location())
+	assert.Equal(t, courier.Version(), gettedCourier.Version())
 }

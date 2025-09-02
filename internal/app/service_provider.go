@@ -2,6 +2,7 @@ package app
 
 import (
 	"delivery/internal/adapters/out/postgre"
+	"delivery/internal/adapters/out/postgre/courier_repo"
 	"delivery/internal/adapters/out/postgre/order_repo"
 	"delivery/internal/config"
 	"delivery/internal/config/env"
@@ -15,11 +16,12 @@ import (
 )
 
 type serviceProvider struct {
-	pgConfig  *config.PgConfig
-	db        *sqlx.DB
-	trManager *manager.Manager
-	uow       ports.UnitOfWork
-	orderRepo ports.OrderRepo
+	pgConfig    *config.PgConfig
+	db          *sqlx.DB
+	trManager   *manager.Manager
+	uow         ports.UnitOfWork
+	orderRepo   ports.OrderRepo
+	courierRepo ports.CourierRepo
 }
 
 func newServiceProvider() *serviceProvider {
@@ -72,9 +74,17 @@ func (s *serviceProvider) OrderRepo() ports.OrderRepo {
 	return s.orderRepo
 }
 
+func (s *serviceProvider) CourierRepo() ports.CourierRepo {
+	if s.courierRepo == nil {
+		s.courierRepo = courier_repo.NewRepository(s.DB(), trmsqlx.DefaultCtxGetter)
+	}
+
+	return s.courierRepo
+}
+
 func (s *serviceProvider) UOW() ports.UnitOfWork {
 	if s.uow == nil {
-		s.uow = postgre.NewUnitOfWork(s.DB(), s.TRManager(), trmsqlx.DefaultCtxGetter, s.OrderRepo())
+		s.uow = postgre.NewUnitOfWork(s.DB(), s.TRManager(), trmsqlx.DefaultCtxGetter, s.OrderRepo(), s.CourierRepo())
 	}
 
 	return s.uow

@@ -16,18 +16,26 @@ type TxGetter interface {
 }
 
 type UnitOfWork struct {
-	db        *sqlx.DB
-	trManager *manager.Manager
-	txGetter  TxGetter
-	orderRepo ports.OrderRepo
+	db          *sqlx.DB
+	trManager   *manager.Manager
+	txGetter    TxGetter
+	orderRepo   ports.OrderRepo
+	courierRepo ports.CourierRepo
 }
 
-func NewUnitOfWork(db *sqlx.DB, trManager *manager.Manager, txGetter TxGetter, orderRepo ports.OrderRepo) ports.UnitOfWork {
+func NewUnitOfWork(
+	db *sqlx.DB,
+	trManager *manager.Manager,
+	txGetter TxGetter,
+	orderRepo ports.OrderRepo,
+	courierRepo ports.CourierRepo,
+) ports.UnitOfWork {
 	return &UnitOfWork{
-		db:        db,
-		trManager: trManager,
-		txGetter:  txGetter,
-		orderRepo: orderRepo,
+		db:          db,
+		trManager:   trManager,
+		txGetter:    txGetter,
+		orderRepo:   orderRepo,
+		courierRepo: courierRepo,
 	}
 }
 
@@ -41,4 +49,8 @@ func (u *UnitOfWork) DefaultTrOrDB(ctx context.Context, db trmsqlx.Tr) trmsqlx.T
 
 func (u *UnitOfWork) OrderRepo() ports.OrderRepo {
 	return u.orderRepo
+}
+
+func (u *UnitOfWork) CourierRepo() ports.CourierRepo {
+	return u.courierRepo
 }
