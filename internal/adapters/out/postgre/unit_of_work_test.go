@@ -202,3 +202,56 @@ func Test_CourierRepoShouldGetCourier(t *testing.T) {
 	assert.Equal(t, courier.Location(), gettedCourier.Location())
 	assert.Equal(t, courier.Version(), gettedCourier.Version())
 }
+
+func Test_CourierRepoShouldUpdateCourier(t *testing.T) {
+	// Arrange
+	randomLocation, _ := shared_kernel.NewRandomLocation()
+	courier, _ := modelCourier.NewCourier("test", 10, randomLocation)
+	_ = uow.Do(context.Background(), func(ctx context.Context) error {
+		return uow.CourierRepo().Add(ctx, courier)
+	})
+
+	// Act
+	err := uow.Do(context.Background(), func(ctx context.Context) error {
+		return uow.CourierRepo().Update(ctx, courier)
+	})
+
+	// Assert
+	assert.NoError(t, err)
+}
+
+func Test_CourierRepoImpossibleToUpdateCourierWhenItNotExists(t *testing.T) {
+	// Arrange
+	randomLocation, _ := shared_kernel.NewRandomLocation()
+	courier, _ := modelCourier.NewCourier("test", 10, randomLocation)
+
+	// Act
+	err := uow.Do(context.Background(), func(ctx context.Context) error {
+		return uow.CourierRepo().Update(ctx, courier)
+	})
+
+	// Assert
+	assert.ErrorIs(t, err, errs.ErrObjectNotFound)
+}
+
+func Test_CourierRepoImpossibleToUpdateCourierWhenSomeoneElseUpdatedIt(t *testing.T) {
+	// Arrange
+	randomLocation, _ := shared_kernel.NewRandomLocation()
+	courier, _ := modelCourier.NewCourier("test", 10, randomLocation)
+	_ = uow.Do(context.Background(), func(ctx context.Context) error {
+		return uow.CourierRepo().Add(ctx, courier)
+	})
+	// Обновляем заказ (предположим, что это сделал другой поток)
+	_ = uow.Do(context.Background(), func(ctx context.Context) error {
+		return uow.CourierRepo().Update(ctx, courier)
+	})
+
+	// Act
+	// Пытаемся обновить заказ, который обновили в другом треде
+	err := uow.Do(context.Background(), func(ctx context.Context) error {
+		return uow.CourierRepo().Update(ctx, courier)
+	})
+
+	// Assert
+	assert.ErrorIs(t, err, errs.ErrVersionIsInvalid)
+}
