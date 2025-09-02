@@ -84,7 +84,7 @@ func (s *serviceProvider) CourierRepo() ports.CourierRepo {
 
 func (s *serviceProvider) UOW() ports.UnitOfWork {
 	if s.uow == nil {
-		s.uow = postgre.NewUnitOfWork(s.DB(), s.TRManager(), trmsqlx.DefaultCtxGetter, s.OrderRepo(), s.CourierRepo())
+		s.uow = postgre.NewUnitOfWork(s.DB(), s.TRManager(), trmsqlx.DefaultCtxGetter)
 	}
 
 	return s.uow

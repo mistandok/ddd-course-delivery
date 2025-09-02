@@ -2,6 +2,8 @@ package postgre
 
 import (
 	"context"
+	"delivery/internal/adapters/out/postgre/courier_repo"
+	"delivery/internal/adapters/out/postgre/order_repo"
 	"delivery/internal/core/ports"
 
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
@@ -27,16 +29,19 @@ func NewUnitOfWork(
 	db *sqlx.DB,
 	trManager *manager.Manager,
 	txGetter TxGetter,
-	orderRepo ports.OrderRepo,
-	courierRepo ports.CourierRepo,
 ) ports.UnitOfWork {
-	return &UnitOfWork{
-		db:          db,
-		trManager:   trManager,
-		txGetter:    txGetter,
-		orderRepo:   orderRepo,
-		courierRepo: courierRepo,
-	}
+	uow := &UnitOfWork{}
+
+	orderRepo := order_repo.NewRepository(db, txGetter)
+	courierRepo := courier_repo.NewRepository(db, txGetter)
+
+	uow.orderRepo = orderRepo
+	uow.courierRepo = courierRepo
+	uow.txGetter = txGetter
+	uow.trManager = trManager
+	uow.db = db
+
+	return uow
 }
 
 func (u *UnitOfWork) Do(ctx context.Context, fn func(ctx context.Context) error) error {

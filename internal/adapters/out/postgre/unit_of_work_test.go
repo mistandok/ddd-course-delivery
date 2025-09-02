@@ -2,8 +2,6 @@ package postgre
 
 import (
 	"context"
-	"delivery/internal/adapters/out/postgre/courier_repo"
-	"delivery/internal/adapters/out/postgre/order_repo"
 	"delivery/internal/core/ports"
 	"delivery/internal/pkg/errs"
 	"delivery/internal/pkg/testcnts"
@@ -48,9 +46,7 @@ func TestMain(m *testing.M) {
 		}
 	}()
 
-	orderRepo := order_repo.NewRepository(db, trmsqlx.DefaultCtxGetter)
-	courierRepo := courier_repo.NewRepository(db, trmsqlx.DefaultCtxGetter)
-	uow = NewUnitOfWork(db, trManager, trmsqlx.DefaultCtxGetter, orderRepo, courierRepo)
+	uow = NewUnitOfWork(db, trManager, trmsqlx.DefaultCtxGetter)
 
 	dbURL = containerDBURL
 
