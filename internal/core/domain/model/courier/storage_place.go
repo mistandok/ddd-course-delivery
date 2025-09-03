@@ -33,6 +33,15 @@ func NewStoragePlace(name string, totalVolume int64) (*StoragePlace, error) {
 	return storagePlace, nil
 }
 
+func LoadStoragePlaceFromRepo(id uuid.UUID, name string, totalVolume int64, orderID *uuid.UUID) *StoragePlace {
+	return &StoragePlace{
+		id:          id,
+		name:        name,
+		totalVolume: totalVolume,
+		orderID:     orderID,
+	}
+}
+
 func (s *StoragePlace) ID() uuid.UUID {
 	return s.id
 }
