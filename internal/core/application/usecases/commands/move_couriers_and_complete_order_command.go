@@ -5,7 +5,9 @@ type MoveCouriersAndFinishOrderCommand struct {
 }
 
 func NewMoveCouriersAndFinishOrderCommand() MoveCouriersAndFinishOrderCommand {
-	return MoveCouriersAndFinishOrderCommand{}
+	return MoveCouriersAndFinishOrderCommand{
+		isValid: true,
+	}
 }
 
 func (c MoveCouriersAndFinishOrderCommand) CommandName() string {

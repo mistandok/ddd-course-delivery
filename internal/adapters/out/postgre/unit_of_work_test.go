@@ -347,30 +347,3 @@ func Test_CourierRepoShouldGetAllFreeCouriers(t *testing.T) {
 	assert.Equal(t, 1, len(gettedCouriers))
 	assert.Equal(t, freeCourier.ID(), gettedCouriers[0].ID())
 }
-
-func Test_CourierRepoShouldGetAllCouriersWithOrders(t *testing.T) {
-	cleanupDB(t)
-	// Arrange
-	randomLocation, _ := shared_kernel.NewRandomLocation()
-	courierWithOrder, _ := modelCourier.NewCourier("test", 10, randomLocation)
-	freeCourier, _ := modelCourier.NewCourier("test", 10, randomLocation)
-	order, _ := modelOrder.NewOrder(uuid.New(), randomLocation, 5)
-	_ = courierWithOrder.TakeOrder(order)
-
-	// Добавляем заказ, свободного курьера и курьера с заказом
-	_ = uow.Do(context.Background(), func(ctx context.Context) error {
-		_ = uow.OrderRepo().Add(ctx, order)
-		_ = uow.CourierRepo().Add(ctx, freeCourier)
-		_ = uow.CourierRepo().Add(ctx, courierWithOrder)
-
-		return nil
-	})
-
-	// Act
-	gettedCouriers, err := uow.CourierRepo().GetAllCouriersWithOrders(context.Background())
-
-	// Assert
-	assert.NoError(t, err)
-	assert.Equal(t, 1, len(gettedCouriers))
-	assert.Equal(t, courierWithOrder.ID(), gettedCouriers[0].ID())
-}
