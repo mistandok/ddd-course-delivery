@@ -19,7 +19,7 @@ type serviceProvider struct {
 	pgConfig    *config.PgConfig
 	db          *sqlx.DB
 	trManager   *manager.Manager
-	uow         ports.UnitOfWork
+	uowFactory  ports.UnitOfWorkFactory
 	orderRepo   ports.OrderRepo
 	courierRepo ports.CourierRepo
 }
@@ -82,10 +82,10 @@ func (s *serviceProvider) CourierRepo() ports.CourierRepo {
 	return s.courierRepo
 }
 
-func (s *serviceProvider) UOW() ports.UnitOfWork {
-	if s.uow == nil {
-		s.uow = postgre.NewUnitOfWork(s.DB(), s.TRManager(), trmsqlx.DefaultCtxGetter)
+func (s *serviceProvider) UOWFactory() ports.UnitOfWorkFactory {
+	if s.uowFactory == nil {
+		s.uowFactory = postgre.NewUnitOfWorkFactory(s.DB(), s.TRManager(), trmsqlx.DefaultCtxGetter)
 	}
 
-	return s.uow
+	return s.uowFactory
 }
