@@ -1,4 +1,4 @@
-package commands
+package assign_order
 
 type AssignedOrderCommand struct {
 	isValid bool

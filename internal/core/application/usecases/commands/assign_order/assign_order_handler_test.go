@@ -1,4 +1,4 @@
-package commands
+package assign_order
 
 import (
 	"context"

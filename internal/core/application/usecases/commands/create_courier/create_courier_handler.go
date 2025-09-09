@@ -1,4 +1,4 @@
-package commands
+package create_courier
 
 import (
 	"context"

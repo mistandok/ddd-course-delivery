@@ -1,4 +1,4 @@
-package commands
+package move_couriers_and_complete_order
 
 import (
 	"context"

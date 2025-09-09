@@ -1,4 +1,4 @@
-package commands
+package add_storage_place
 
 import (
 	"context"
