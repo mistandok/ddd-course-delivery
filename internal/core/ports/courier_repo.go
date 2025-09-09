@@ -14,4 +14,5 @@ type CourierRepo interface {
 	Update(ctx context.Context, courier *modelCourier.Courier) error
 	Get(ctx context.Context, id uuid.UUID) (*modelCourier.Courier, error)
 	GetAllFreeCouriers(ctx context.Context) ([]*modelCourier.Courier, error)
+	GetAllCouriersWithOrders(ctx context.Context) ([]*modelCourier.Courier, error)
 }
