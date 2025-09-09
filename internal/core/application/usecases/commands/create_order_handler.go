@@ -31,6 +31,7 @@ func (h *createOrderHandler) Handle(ctx context.Context, command CreateOrderComm
 	uow := h.uowFactory.NewUOW()
 
 	err := uow.Do(ctx, func(ctx context.Context) error {
+		// TODO: потом перейдем на другой способ генерации локации
 		randomLocation, uowErr := shared_kernel.NewRandomLocation()
 		if uowErr != nil {
 			return uowErr
