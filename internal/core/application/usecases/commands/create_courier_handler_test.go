@@ -2,10 +2,11 @@ package commands
 
 import (
 	"context"
-	"delivery/internal/core/ports/mocks"
-	"delivery/internal/pkg/errs"
 	"errors"
 	"testing"
+
+	"delivery/internal/core/ports/mocks"
+	"delivery/internal/pkg/errs"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -16,7 +17,7 @@ func TestCreateCourierHandler_Handle_SuccessfulCourierCreation(t *testing.T) {
 	mockCourierRepo := setupSuccessfulCourierRepo(t)
 	mockUoW := setupSuccessfulUoWForCourier(t, mockCourierRepo)
 	mockUoWFactory := setupUoWFactoryForCourier(t, mockUoW)
-	
+
 	handler := NewCreateCourierHandler(mockUoWFactory)
 	command := createValidCourierCommand()
 
@@ -47,7 +48,7 @@ func TestCreateCourierHandler_Handle_CourierRepositoryError(t *testing.T) {
 	mockCourierRepo := setupFailingCourierRepo(t, expectedError)
 	mockUoW := setupSuccessfulUoWForCourier(t, mockCourierRepo)
 	mockUoWFactory := setupUoWFactoryForCourier(t, mockUoW)
-	
+
 	handler := NewCreateCourierHandler(mockUoWFactory)
 	command := createValidCourierCommand()
 
@@ -64,7 +65,7 @@ func TestCreateCourierHandler_Handle_UnitOfWorkDoError(t *testing.T) {
 	expectedError := errors.New("uow error")
 	mockUoW := setupFailingUoWForCourier(t, expectedError)
 	mockUoWFactory := setupUoWFactoryForCourier(t, mockUoW)
-	
+
 	handler := NewCreateCourierHandler(mockUoWFactory)
 	command := createValidCourierCommand()
 

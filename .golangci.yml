@@ -1,0 +1,40 @@
+version: "2"
+linters:
+  enable:
+    - goconst
+    - misspell
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - errcheck
+        path: _test\.go
+      - linters:
+          - all
+        path: internal/generated/
+      - linters:
+          - all
+        path: mocks/
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - delivery
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

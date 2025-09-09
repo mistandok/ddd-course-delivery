@@ -1,8 +1,9 @@
 package commands
 
 import (
-	"delivery/internal/pkg/errs"
 	"errors"
+
+	"delivery/internal/pkg/errs"
 )
 
 type CreateCourierCommand struct {

@@ -2,10 +2,11 @@ package commands
 
 import (
 	"context"
-	"delivery/internal/core/ports/mocks"
-	"delivery/internal/pkg/errs"
 	"errors"
 	"testing"
+
+	"delivery/internal/core/ports/mocks"
+	"delivery/internal/pkg/errs"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -17,7 +18,7 @@ func TestCreateOrderHandler_Handle_SuccessfulOrderCreation(t *testing.T) {
 	mockOrderRepo := setupSuccessfulOrderRepo(t)
 	mockUoW := setupSuccessfulUoW(t, mockOrderRepo)
 	mockUoWFactory := setupUoWFactory(t, mockUoW)
-	
+
 	handler := NewCreateOrderHandler(mockUoWFactory)
 	command := createValidCommand()
 
@@ -48,7 +49,7 @@ func TestCreateOrderHandler_Handle_OrderRepositoryError(t *testing.T) {
 	mockOrderRepo := setupFailingOrderRepo(t, expectedError)
 	mockUoW := setupSuccessfulUoW(t, mockOrderRepo)
 	mockUoWFactory := setupUoWFactory(t, mockUoW)
-	
+
 	handler := NewCreateOrderHandler(mockUoWFactory)
 	command := createValidCommand()
 
@@ -65,7 +66,7 @@ func TestCreateOrderHandler_Handle_UnitOfWorkDoError(t *testing.T) {
 	expectedError := errors.New("uow error")
 	mockUoW := setupFailingUoW(t, expectedError)
 	mockUoWFactory := setupUoWFactory(t, mockUoW)
-	
+
 	handler := NewCreateOrderHandler(mockUoWFactory)
 	command := createValidCommand()
 

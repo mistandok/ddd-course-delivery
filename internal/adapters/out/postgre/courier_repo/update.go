@@ -3,9 +3,10 @@ package courier_repo
 import (
 	"context"
 	"database/sql"
+	"errors"
+
 	modelCourier "delivery/internal/core/domain/model/courier"
 	"delivery/internal/pkg/errs"
-	"errors"
 
 	"github.com/Masterminds/squirrel"
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"

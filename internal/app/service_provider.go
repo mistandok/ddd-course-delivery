@@ -1,6 +1,8 @@
 package app
 
 import (
+	"log"
+
 	"delivery/internal/adapters/out/postgre"
 	"delivery/internal/adapters/out/postgre/courier_repo"
 	"delivery/internal/adapters/out/postgre/order_repo"
@@ -8,7 +10,6 @@ import (
 	"delivery/internal/config/env"
 	"delivery/internal/core/ports"
 	"delivery/internal/pkg/closer"
-	"log"
 
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"

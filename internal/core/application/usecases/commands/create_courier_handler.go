@@ -2,11 +2,12 @@ package commands
 
 import (
 	"context"
+	"errors"
+
 	"delivery/internal/core/domain/model/courier"
 	"delivery/internal/core/domain/model/shared_kernel"
 	"delivery/internal/core/ports"
 	"delivery/internal/pkg/errs"
-	"errors"
 )
 
 type CreateCourierHandler interface {

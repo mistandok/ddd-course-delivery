@@ -2,12 +2,13 @@ package commands
 
 import (
 	"context"
+	"errors"
+	"testing"
+
 	"delivery/internal/core/domain/model/courier"
 	"delivery/internal/core/domain/model/shared_kernel"
 	"delivery/internal/core/ports/mocks"
 	"delivery/internal/pkg/errs"
-	"errors"
-	"testing"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -18,13 +19,13 @@ func TestAddStoragePlaceHandler_Handle_SuccessfulStoragePlaceAddition(t *testing
 	// Arrange
 	courierID := uuid.New()
 	testCourier := newValidCourier(t)
-	
+
 	mockCourierRepo := setupSuccessfulCourierRepoForGet(t, courierID, testCourier)
 	mockCourierRepo.EXPECT().Update(mock.Anything, mock.Anything).Return(nil)
-	
+
 	mockUoW := setupSuccessfulUoWForAddStoragePlace(t, mockCourierRepo)
 	mockUoWFactory := setupUoWFactoryForAddStoragePlace(t, mockUoW)
-	
+
 	handler := NewAddStoragePlaceHandler(mockUoWFactory)
 	command := createValidAddStoragePlaceCommand(courierID)
 
@@ -53,11 +54,11 @@ func TestAddStoragePlaceHandler_Handle_CourierNotFound(t *testing.T) {
 	// Arrange
 	courierID := uuid.New()
 	expectedError := errors.New("courier not found")
-	
+
 	mockCourierRepo := setupFailingCourierRepoForGet(t, courierID, expectedError)
 	mockUoW := setupSuccessfulUoWForAddStoragePlace(t, mockCourierRepo)
 	mockUoWFactory := setupUoWFactoryForAddStoragePlace(t, mockUoW)
-	
+
 	handler := NewAddStoragePlaceHandler(mockUoWFactory)
 	command := createValidAddStoragePlaceCommand(courierID)
 
@@ -74,13 +75,13 @@ func TestAddStoragePlaceHandler_Handle_CourierRepositoryUpdateError(t *testing.T
 	courierID := uuid.New()
 	testCourier := newValidCourier(t)
 	expectedError := errors.New("update error")
-	
+
 	mockCourierRepo := setupSuccessfulCourierRepoForGet(t, courierID, testCourier)
 	mockCourierRepo.EXPECT().Update(mock.Anything, mock.Anything).Return(expectedError)
-	
+
 	mockUoW := setupSuccessfulUoWForAddStoragePlace(t, mockCourierRepo)
 	mockUoWFactory := setupUoWFactoryForAddStoragePlace(t, mockUoW)
-	
+
 	handler := NewAddStoragePlaceHandler(mockUoWFactory)
 	command := createValidAddStoragePlaceCommand(courierID)
 
@@ -96,10 +97,10 @@ func TestAddStoragePlaceHandler_Handle_UnitOfWorkDoError(t *testing.T) {
 	// Arrange
 	courierID := uuid.New()
 	expectedError := errors.New("uow error")
-	
+
 	mockUoW := setupFailingUoWForAddStoragePlace(t, expectedError)
 	mockUoWFactory := setupUoWFactoryForAddStoragePlace(t, mockUoW)
-	
+
 	handler := NewAddStoragePlaceHandler(mockUoWFactory)
 	command := createValidAddStoragePlaceCommand(courierID)
 
@@ -161,16 +162,16 @@ func createInvalidAddStoragePlaceCommand() AddStoragePlaceCommand {
 
 func newValidCourier(t *testing.T) *courier.Courier {
 	t.Helper()
-	
+
 	location, err := shared_kernel.NewRandomLocation()
 	if err != nil {
 		t.Fatalf("failed to create random location: %v", err)
 	}
-	
+
 	testCourier, err := courier.NewCourier("Test Courier", 50, location)
 	if err != nil {
 		t.Fatalf("failed to create courier: %v", err)
 	}
-	
+
 	return testCourier
 }

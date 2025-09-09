@@ -1,8 +1,9 @@
 package courier
 
 import (
-	"delivery/internal/pkg/errs"
 	"testing"
+
+	"delivery/internal/pkg/errs"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -81,7 +82,7 @@ func Test_Imposible_Store_Order_In_Storage_Place_When_Order_Volume_Is_Greater_Th
 	assert.ErrorIs(t, err, errs.ErrValueIsInvalid)
 }
 
-func Test_Storage_Place_Is_Occupied_If_Successfull_Store_Order(t *testing.T) {
+func Test_Storage_Place_Is_Occupied_If_Successful_Store_Order(t *testing.T) {
 	t.Parallel()
 
 	// Arrange

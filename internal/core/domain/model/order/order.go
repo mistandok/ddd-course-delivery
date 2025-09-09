@@ -1,9 +1,10 @@
 package order
 
 import (
+	"errors"
+
 	"delivery/internal/core/domain/model/shared_kernel"
 	"delivery/internal/pkg/errs"
-	"errors"
 
 	"github.com/google/uuid"
 )

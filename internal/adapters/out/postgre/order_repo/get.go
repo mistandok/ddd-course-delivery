@@ -3,9 +3,11 @@ package order_repo
 import (
 	"context"
 	"database/sql"
+	"errors"
+
 	modelOrder "delivery/internal/core/domain/model/order"
 	"delivery/internal/pkg/errs"
-	"errors"
+
 	"github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
 )

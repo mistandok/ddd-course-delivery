@@ -1,9 +1,10 @@
 package courier
 
 import (
+	"errors"
+
 	"delivery/internal/pkg/errs"
 	"delivery/internal/pkg/pointer"
-	"errors"
 
 	"github.com/google/uuid"
 )
