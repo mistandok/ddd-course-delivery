@@ -19,6 +19,6 @@ func NewUnitOfWorkFactory(db *sqlx.DB, trManager *manager.Manager, txGetter TxGe
 	return &UnitOfWorkFactory{db: db, trManager: trManager, txGetter: txGetter}
 }
 
-func (f *UnitOfWorkFactory) NewUOW() (ports.UnitOfWork, error) {
-	return NewUnitOfWork(f.db, f.trManager, f.txGetter), nil
+func (f *UnitOfWorkFactory) NewUOW() ports.UnitOfWork {
+	return NewUnitOfWork(f.db, f.trManager, f.txGetter)
 }

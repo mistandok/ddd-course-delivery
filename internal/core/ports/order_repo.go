@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
+//go:generate mockery --name OrderRepo --with-expecter --exported
 type OrderRepo interface {
 	Add(ctx context.Context, order *modelOrder.Order) error
 	Update(ctx context.Context, order *modelOrder.Order) error
