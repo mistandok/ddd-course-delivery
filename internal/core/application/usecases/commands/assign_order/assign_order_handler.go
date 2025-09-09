@@ -2,9 +2,10 @@ package assign_order
 
 import (
 	"context"
+	"errors"
+
 	"delivery/internal/core/ports"
 	"delivery/internal/pkg/errs"
-	"errors"
 )
 
 type AssignedOrderHandler interface {

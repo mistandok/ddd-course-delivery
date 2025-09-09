@@ -2,10 +2,14 @@ package get_all_couriers
 
 import (
 	"context"
+
 	"delivery/internal/pkg/errs"
+
+	"database/sql"
 
 	"github.com/Masterminds/squirrel"
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
+	"github.com/jmoiron/sqlx"
 )
 
 type GetAllCouriersHandler interface {
@@ -19,11 +23,12 @@ type txGetter interface {
 }
 
 type getAllCouriersHandler struct {
+	db       *sqlx.DB
 	txGetter txGetter
 }
 
-func NewGetAllCouriersHandler(txGetter txGetter) *getAllCouriersHandler {
-	return &getAllCouriersHandler{txGetter: txGetter}
+func NewGetAllCouriersHandler(db *sqlx.DB, txGetter txGetter) *getAllCouriersHandler {
+	return &getAllCouriersHandler{db: db, txGetter: txGetter}
 }
 
 func (h *getAllCouriersHandler) Handle(ctx context.Context, query GetAllCouriersQuery) (GetAllCouriersResponse, error) {
@@ -31,9 +36,9 @@ func (h *getAllCouriersHandler) Handle(ctx context.Context, query GetAllCouriers
 		return GetAllCouriersResponse{}, errs.NewQueryIsInvalidError(query.QueryName())
 	}
 
-	tx := h.txGetter.DefaultTrOrDB(ctx, nil)
+	tx := h.txGetter.DefaultTrOrDB(ctx, h.db)
 
-	sql, args, err := squirrel.Select("id", "name", "location").
+	qry, args, err := squirrel.Select("id", "name", "location").
 		From("courier").
 		PlaceholderFormat(squirrel.Dollar).
 		ToSql()
@@ -42,8 +47,11 @@ func (h *getAllCouriersHandler) Handle(ctx context.Context, query GetAllCouriers
 	}
 
 	var couriers []CourierDTO
-	err = tx.SelectContext(ctx, &couriers, sql, args...)
+	err = tx.SelectContext(ctx, &couriers, qry, args...)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return GetAllCouriersResponse{}, nil
+		}
 		return GetAllCouriersResponse{}, err
 	}
 

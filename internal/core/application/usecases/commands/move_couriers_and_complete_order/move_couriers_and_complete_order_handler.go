@@ -2,11 +2,12 @@ package move_couriers_and_complete_order
 
 import (
 	"context"
+	"errors"
+
 	modelCourier "delivery/internal/core/domain/model/courier"
 	modelOrder "delivery/internal/core/domain/model/order"
 	"delivery/internal/core/ports"
 	"delivery/internal/pkg/errs"
-	"errors"
 )
 
 type MoveCouriersAndCompleteOrderHandler interface {
