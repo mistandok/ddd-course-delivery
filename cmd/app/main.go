@@ -2,8 +2,9 @@ package main
 
 import (
 	"context"
-	"delivery/internal/app"
 	"flag"
+
+	"delivery/internal/app"
 
 	"github.com/labstack/gommon/log"
 )

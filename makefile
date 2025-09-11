@@ -10,13 +10,28 @@ setup-local-env:
 
 APP_NAME=delivery
 
-.PHONY: build test
+.PHONY: build test lint fmt check
 build: test ## Build application
 	mkdir -p build
 	go build -o build/${APP_NAME} cmd/app/main.go
 
 test: ## Run tests
 	go test ./...
+
+lint: ## Run linter
+	@which golangci-lint > /dev/null || (echo "golangci-lint not found. Installing..." && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest)
+	golangci-lint run
+
+lint-fix: ## Run linter with auto-fix
+	@which golangci-lint > /dev/null || (echo "golangci-lint not found. Installing..." && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest)
+	golangci-lint run --fix
+
+fmt: ## Format code
+	go fmt ./...
+	@which goimports > /dev/null || (echo "goimports not found. Installing..." && go install golang.org/x/tools/cmd/goimports@latest)
+	goimports -w .
+
+check: fmt lint test ## Format, lint and test
 
 generate-server:
 	@go tool oapi-codegen -config configs/server.cfg.yaml https://gitlab.com/microarch-ru/ddd-in-practice/system-design/-/raw/main/services/delivery/contracts/openapi.yml

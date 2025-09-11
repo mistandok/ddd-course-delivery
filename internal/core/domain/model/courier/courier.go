@@ -1,11 +1,12 @@
 package courier
 
 import (
+	"errors"
+	"math"
+
 	"delivery/internal/core/domain/model/order"
 	kernel "delivery/internal/core/domain/model/shared_kernel"
 	"delivery/internal/pkg/errs"
-	"errors"
-	"math"
 
 	"github.com/google/uuid"
 )

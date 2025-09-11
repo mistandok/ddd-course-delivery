@@ -1,12 +1,13 @@
 package outbox
 
 import (
-	"delivery/internal/pkg/ddd"
-	"delivery/internal/pkg/errs"
 	"encoding/json"
 	"fmt"
 	"reflect"
 	"time"
+
+	"delivery/internal/pkg/ddd"
+	"delivery/internal/pkg/errs"
 )
 
 type EventRegistry interface {

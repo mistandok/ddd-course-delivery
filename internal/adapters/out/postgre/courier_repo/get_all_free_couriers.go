@@ -2,6 +2,7 @@ package courier_repo
 
 import (
 	"context"
+
 	modelCourier "delivery/internal/core/domain/model/courier"
 
 	"github.com/Masterminds/squirrel"
@@ -87,7 +88,7 @@ func (r *Repository) convertToFreeCouriersDomain(couriersDTO []CourierDTO, stora
 	var result []*modelCourier.Courier
 	for _, courierDTO := range couriersDTO {
 		storagePlaces := storagePlacesByCourier[courierDTO.ID]
-		
+
 		courier, err := DTOToDomain(&courierDTO, storagePlaces)
 		if err != nil {
 			return nil, err

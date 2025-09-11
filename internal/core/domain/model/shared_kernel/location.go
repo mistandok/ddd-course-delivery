@@ -1,9 +1,10 @@
 package shared_kernel
 
 import (
-	"delivery/internal/pkg/errs"
 	"fmt"
 	"math/rand/v2"
+
+	"delivery/internal/pkg/errs"
 )
 
 const (

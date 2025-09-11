@@ -6,6 +6,7 @@ import (
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 )
 
+//go:generate mockery --name UnitOfWork --with-expecter --exported
 type UnitOfWork interface {
 	Do(ctx context.Context, fn func(ctx context.Context) error) error
 	DefaultTrOrDB(ctx context.Context, db trmsqlx.Tr) trmsqlx.Tr

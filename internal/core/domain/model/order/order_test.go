@@ -1,8 +1,9 @@
 package order
 
 import (
-	"delivery/internal/core/domain/model/shared_kernel"
 	"testing"
+
+	"delivery/internal/core/domain/model/shared_kernel"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

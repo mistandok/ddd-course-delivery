@@ -1,8 +1,9 @@
 package shared_kernel
 
 import (
-	"delivery/internal/pkg/errs"
 	"testing"
+
+	"delivery/internal/pkg/errs"
 
 	"github.com/stretchr/testify/assert"
 )

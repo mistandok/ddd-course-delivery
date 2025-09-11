@@ -2,11 +2,13 @@ package ports
 
 import (
 	"context"
+
 	modelCourier "delivery/internal/core/domain/model/courier"
 
 	"github.com/google/uuid"
 )
 
+//go:generate mockery --name CourierRepo --with-expecter --exported
 type CourierRepo interface {
 	Add(ctx context.Context, courier *modelCourier.Courier) error
 	Update(ctx context.Context, courier *modelCourier.Courier) error

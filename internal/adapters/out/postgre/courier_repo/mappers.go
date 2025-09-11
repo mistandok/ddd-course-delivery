@@ -7,8 +7,8 @@ import (
 
 func DomainToDTO(courier *modelCourier.Courier) (*CourierDTO, []StoragePlaceDTO) {
 	courierDTO := &CourierDTO{
-		ID:   courier.ID(),
-		Name: courier.Name(),
+		ID:    courier.ID(),
+		Name:  courier.Name(),
 		Speed: courier.Speed(),
 		Location: LocationDTO{
 			X: courier.Location().X(),
@@ -18,7 +18,7 @@ func DomainToDTO(courier *modelCourier.Courier) (*CourierDTO, []StoragePlaceDTO)
 	}
 
 	storagePlaces := make([]StoragePlaceDTO, 0, len(courier.StoragePlaces()))
-	
+
 	for _, sp := range courier.StoragePlaces() {
 		storagePlaces = append(storagePlaces, StoragePlaceDTO{
 			ID:        sp.ID(),
@@ -39,7 +39,7 @@ func DTOToDomain(courierDTO *CourierDTO, storagePlacesDTO []StoragePlaceDTO) (*m
 	}
 
 	storagePlaces := make([]*modelCourier.StoragePlace, 0, len(storagePlacesDTO))
-	
+
 	for _, spDTO := range storagePlacesDTO {
 		sp := modelCourier.LoadStoragePlaceFromRepo(spDTO.ID, spDTO.Name, spDTO.Volume, spDTO.OrderID)
 		storagePlaces = append(storagePlaces, sp)

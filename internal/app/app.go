@@ -2,10 +2,11 @@ package app
 
 import (
 	"context"
-	"delivery/internal/config"
-	"delivery/internal/pkg/closer"
 	"log"
 	"sync"
+
+	"delivery/internal/config"
+	"delivery/internal/pkg/closer"
 )
 
 const (
@@ -50,7 +51,7 @@ func (a *App) Run() error {
 
 			err := currentRunAction.action()
 			if err != nil {
-				log.Fatalf(currentRunAction.errMsg)
+				log.Fatalf("%s", currentRunAction.errMsg)
 			}
 		}()
 	}

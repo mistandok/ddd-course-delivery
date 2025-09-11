@@ -1,11 +1,12 @@
 package services
 
 import (
+	"errors"
+	"math"
+
 	aggCourier "delivery/internal/core/domain/model/courier"
 	aggOrder "delivery/internal/core/domain/model/order"
 	"delivery/internal/pkg/errs"
-	"errors"
-	"math"
 )
 
 type Dispatcher interface {

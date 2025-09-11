@@ -1,15 +1,14 @@
 package courier
 
 import (
+	"testing"
+
 	"delivery/internal/core/domain/model/order"
 	"delivery/internal/core/domain/model/shared_kernel"
-	"testing"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
-
-const ()
 
 func Test_Create_Courier_With_Default_StoragePlace(t *testing.T) {
 	// Arrange
