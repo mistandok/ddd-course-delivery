@@ -18,11 +18,13 @@ import (
 	"delivery/internal/core/application/usecases/queries/get_all_uncompleted_orders"
 	"delivery/internal/core/domain/services"
 	"delivery/internal/core/ports"
+	"delivery/internal/crons"
 	"delivery/internal/pkg/closer"
 
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 	"github.com/jmoiron/sqlx"
+	"github.com/robfig/cron/v3"
 )
 
 type serviceProvider struct {
@@ -36,6 +38,10 @@ type serviceProvider struct {
 
 	// HTTP
 	httpHandlers *httpv1.DeliveryService
+
+	// Cron Jobs
+	moveCouriersJob  cron.Job
+	assignOrdersJob  cron.Job
 
 	// Domain Services
 	orderDispatcher ports.OrderDispatcher
@@ -212,4 +218,30 @@ func (s *serviceProvider) HttpHandlers() *httpv1.DeliveryService {
 	}
 
 	return s.httpHandlers
+}
+
+// Cron Jobs
+
+func (s *serviceProvider) MoveCouriersJob() cron.Job {
+	if s.moveCouriersJob == nil {
+		job, err := crons.NewMoveCouriersJob(s.MoveCouriersAndCompleteOrderHandler())
+		if err != nil {
+			log.Fatalf("cannot create MoveCouriersJob: %v", err)
+		}
+		s.moveCouriersJob = job
+	}
+
+	return s.moveCouriersJob
+}
+
+func (s *serviceProvider) AssignOrdersJob() cron.Job {
+	if s.assignOrdersJob == nil {
+		job, err := crons.NewAssignOrdersJob(s.AssignOrderHandler())
+		if err != nil {
+			log.Fatalf("cannot create AssignOrdersJob: %v", err)
+		}
+		s.assignOrdersJob = job
+	}
+
+	return s.assignOrdersJob
 }

@@ -14,6 +14,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/robfig/cron/v3"
 )
 
 const (
@@ -24,6 +25,7 @@ type App struct {
 	serviceProvider *serviceProvider
 	configPath      string
 	httpServer      *http.Server
+	cronScheduler   *cron.Cron
 }
 
 func NewApp(ctx context.Context, configPath string) (*App, error) {
@@ -48,6 +50,7 @@ func (a *App) Run() error {
 	}{
 		{action: a.runGRPCServer, errMsg: "ошибка при запуске GRPC сервера"},
 		{action: a.runHttpServer, errMsg: "ошибка при запуске HTTP сервера"},
+		{action: a.runCronScheduler, errMsg: "ошибка при запуске Cron планировщика"},
 	}
 
 	wg := sync.WaitGroup{}
@@ -75,6 +78,7 @@ func (a *App) initDeps(ctx context.Context) error {
 		a.initConfig,
 		a.initServiceProvider,
 		a.initHttpServer,
+		a.initCronScheduler,
 	}
 
 	for _, f := range initDepFunctions {
@@ -135,6 +139,34 @@ func (a *App) initHttpServer(ctx context.Context) error {
 func (a *App) runGRPCServer() error {
 	// TODO: когда будем добавлять grpc сервер - реализовать
 	return nil
+}
+
+func (a *App) initCronScheduler(ctx context.Context) error {
+	a.cronScheduler = cron.New()
+
+	_, err := a.cronScheduler.AddJob("@every 1s", a.serviceProvider.AssignOrdersJob())
+	if err != nil {
+		return err
+	}
+
+	_, err = a.cronScheduler.AddJob("@every 1s", a.serviceProvider.MoveCouriersJob())
+	if err != nil {
+		return err
+	}
+
+	closer.Add(func() error {
+		ctx := a.cronScheduler.Stop()
+		<-ctx.Done()
+		return nil
+	})
+
+	return nil
+}
+
+func (a *App) runCronScheduler() error {
+	log.Printf("Starting Cron scheduler")
+	a.cronScheduler.Start()
+	select {} // Block forever
 }
 
 func (a *App) runHttpServer() error {
