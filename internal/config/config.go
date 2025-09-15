@@ -35,7 +35,7 @@ type PgConfig struct {
 
 func (cfg *PgConfig) DSN() string {
 	return fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s",
+		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
 		cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.DbName,
 	)
 }

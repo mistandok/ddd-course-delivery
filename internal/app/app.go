@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	httpmiddleware "delivery/internal/adapters/in/http/middleware"
 	"delivery/internal/config"
 	"delivery/internal/generated/servers"
 	"delivery/internal/pkg/closer"
@@ -110,6 +111,7 @@ func (a *App) initHttpServer(ctx context.Context) error {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
+	e.Use(httpmiddleware.ErrorHandlingMiddleware())
 
 	servers.RegisterHandlers(e, a.serviceProvider.HttpHandlers())
 

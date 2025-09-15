@@ -7,6 +7,7 @@ import (
 	"delivery/internal/app"
 
 	"github.com/labstack/gommon/log"
+	_ "github.com/lib/pq"
 )
 
 var configPath string

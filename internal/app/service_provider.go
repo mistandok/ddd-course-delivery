@@ -3,7 +3,7 @@ package app
 import (
 	"log"
 
-	"delivery/internal/adapters/in/http"
+	httpv1 "delivery/internal/adapters/in/http/v1"
 	"delivery/internal/adapters/out/postgre"
 	"delivery/internal/adapters/out/postgre/courier_repo"
 	"delivery/internal/adapters/out/postgre/order_repo"
@@ -35,7 +35,7 @@ type serviceProvider struct {
 	courierRepo ports.CourierRepo
 
 	// HTTP
-	httpHandlers *http.Handlers
+	httpHandlers *httpv1.DeliveryService
 
 	// Domain Services
 	orderDispatcher ports.OrderDispatcher
@@ -201,9 +201,14 @@ func (s *serviceProvider) HttpConfig() *config.HttpConfig {
 	return s.httpConfig
 }
 
-func (s *serviceProvider) HttpHandlers() *http.Handlers {
+func (s *serviceProvider) HttpHandlers() *httpv1.DeliveryService {
 	if s.httpHandlers == nil {
-		s.httpHandlers = http.NewHandlers()
+		s.httpHandlers = httpv1.NewDeliveryService(
+			s.GetAllCouriersHandler(),
+			s.CreateCourierHandler(),
+			s.GetAllUncompletedOrdersHandler(),
+			s.CreateOrderHandler(),
+		)
 	}
 
 	return s.httpHandlers

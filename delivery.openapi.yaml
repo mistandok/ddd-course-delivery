@@ -1,0 +1,164 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Swagger Delivery
+  description: Отвечает за учет курьеров, деспетчеризацию доставок, доставку
+paths:
+  /api/v1/orders:
+    post:
+      summary: Создать заказ
+      description: Позволяет создать заказ с целью тестирования
+      operationId: CreateOrder
+      responses:
+        '201':
+          description: Успешный ответ
+        default:
+          description: Ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/orders/active:
+    get:
+      summary: Получить все незавершенные заказы
+      description: Позволяет получить все незавершенные заказы
+      operationId: GetOrders
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+        default:
+          description: Ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/couriers:
+    post:
+      summary: Добавить курьера
+      description: Позволяет добавить курьера
+      operationId: CreateCourier
+      requestBody:
+        description: Курьер
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewCourier'
+      responses:
+        '201':
+          description: Успешный ответ
+        default:
+          description: Ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: Ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Ошибка выполнения бизнес логики
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'        
+    get:
+      summary: Получить всех курьеров
+      description: Позволяет получить всех курьеров
+      operationId: GetCouriers
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Courier'
+        default:
+          description: Ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    Location:
+      type: object
+      required:
+        - x
+        - y
+      properties:
+        x:
+          type: integer
+          description: X
+          minimum: 0  # Валидация минимального значения для x
+        y:
+          type: integer
+          description: Y
+          minimum: 0  # Валидация минимального значения для y
+    Order:
+      type: object
+      required:
+        - id
+        - location
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Идентификатор
+        location:
+          $ref: '#/components/schemas/Location'
+          description: Геолокация
+    NewCourier:
+      type: object
+      required:
+        - name
+        - speed
+      properties:
+        name:
+          type: string
+          description: Имя
+          minLength: 1  # Валидация на минимальную длину
+        speed:
+          type: integer
+          description: Скорость
+          minimum: 1  # Валидация на минимальное значение
+    Courier:
+      type: object
+      required:
+        - id
+        - name
+        - location
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Идентификатор
+        name:
+          type: string
+          description: Имя
+        location:
+          $ref: '#/components/schemas/Location'
+          description: Геолокация
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: Код ошибки
+        message:
+          type: string
+          description: Текст ошибки
