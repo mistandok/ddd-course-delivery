@@ -9,17 +9,17 @@ import (
 	"github.com/labstack/gommon/log"
 )
 
-var confitPath string
+var configPath string
 
 func init() {
-	flag.StringVar(&confitPath, "config", ".env", "path to config file")
+	flag.StringVar(&configPath, "config", "../../deploy/env/.env.local", "path to config file")
 	flag.Parse()
 }
 
 func main() {
 	ctx := context.Background()
 
-	application, err := app.NewApp(ctx, confitPath)
+	application, err := app.NewApp(ctx, configPath)
 	if err != nil {
 		log.Fatalf("failed to create application: %v", err)
 	}

@@ -3,10 +3,16 @@ package app
 import (
 	"context"
 	"log"
+	"net/http"
 	"sync"
+	"time"
 
 	"delivery/internal/config"
+	"delivery/internal/generated/servers"
 	"delivery/internal/pkg/closer"
+
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 const (
@@ -16,6 +22,7 @@ const (
 type App struct {
 	serviceProvider *serviceProvider
 	configPath      string
+	httpServer      *http.Server
 }
 
 func NewApp(ctx context.Context, configPath string) (*App, error) {
@@ -39,6 +46,7 @@ func (a *App) Run() error {
 		errMsg string
 	}{
 		{action: a.runGRPCServer, errMsg: "ошибка при запуске GRPC сервера"},
+		{action: a.runHttpServer, errMsg: "ошибка при запуске HTTP сервера"},
 	}
 
 	wg := sync.WaitGroup{}
@@ -65,6 +73,7 @@ func (a *App) initDeps(ctx context.Context) error {
 	initDepFunctions := []func(context.Context) error{
 		a.initConfig,
 		a.initServiceProvider,
+		a.initHttpServer,
 	}
 
 	for _, f := range initDepFunctions {
@@ -95,7 +104,38 @@ func (a *App) initGRPCServer(ctx context.Context) error {
 	return nil
 }
 
+func (a *App) initHttpServer(ctx context.Context) error {
+	e := echo.New()
+
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+	e.Use(middleware.CORS())
+
+	servers.RegisterHandlers(e, a.serviceProvider.HttpHandlers())
+
+	httpConfig := a.serviceProvider.HttpConfig()
+	a.httpServer = &http.Server{
+		Addr:         httpConfig.Address(),
+		Handler:      e,
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
+	}
+
+	closer.Add(func() error {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		return a.httpServer.Shutdown(shutdownCtx)
+	})
+
+	return nil
+}
+
 func (a *App) runGRPCServer() error {
 	// TODO: когда будем добавлять grpc сервер - реализовать
 	return nil
+}
+
+func (a *App) runHttpServer() error {
+	log.Printf("Starting HTTP server on %s", a.httpServer.Addr)
+	return a.httpServer.ListenAndServe()
 }

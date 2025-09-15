@@ -3,6 +3,7 @@ package app
 import (
 	"log"
 
+	"delivery/internal/adapters/in/http"
 	"delivery/internal/adapters/out/postgre"
 	"delivery/internal/adapters/out/postgre/courier_repo"
 	"delivery/internal/adapters/out/postgre/order_repo"
@@ -25,12 +26,16 @@ import (
 )
 
 type serviceProvider struct {
-	pgConfig    *config.PgConfig
-	db          *sqlx.DB
-	trManager   *manager.Manager
-	uowFactory  ports.UnitOfWorkFactory
-	orderRepo   ports.OrderRepo
+	pgConfig   *config.PgConfig
+	httpConfig *config.HttpConfig
+	db         *sqlx.DB
+	trManager  *manager.Manager
+	uowFactory ports.UnitOfWorkFactory
+	orderRepo  ports.OrderRepo
 	courierRepo ports.CourierRepo
+
+	// HTTP
+	httpHandlers *http.Handlers
 
 	// Domain Services
 	orderDispatcher ports.OrderDispatcher
@@ -181,4 +186,25 @@ func (s *serviceProvider) GetAllUncompletedOrdersHandler() get_all_uncompleted_o
 	}
 
 	return s.getAllUncompletedOrdersHandler
+}
+
+func (s *serviceProvider) HttpConfig() *config.HttpConfig {
+	if s.httpConfig == nil {
+		httpConfig, err := config.NewHttpConfigSearcher().Get()
+		if err != nil {
+			log.Fatalf("failed to get http config: %v", err)
+		}
+
+		s.httpConfig = httpConfig
+	}
+
+	return s.httpConfig
+}
+
+func (s *serviceProvider) HttpHandlers() *http.Handlers {
+	if s.httpHandlers == nil {
+		s.httpHandlers = http.NewHandlers()
+	}
+
+	return s.httpHandlers
 }
