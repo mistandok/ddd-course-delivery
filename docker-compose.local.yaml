@@ -15,11 +15,23 @@ services:
     volumes:
       - delivery-db-volume:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "app"]
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-p", "${PG_PORT}"]
       interval: 5s
       timeout: 5s
       retries: 5
-      start_period: 10s
+      start_period: 10s 
+   
+  postgres:
+    image: postgres:13.3
+    container_name: postgres
+    environment:
+      POSTGRES_USER: "username"
+      POSTGRES_PASSWORD: "secret"
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init-db:/docker-entrypoint-initdb.d
+    command: [ "postgres", "-c", "log_statement=mod" ]
 
   migrator:
     build:
@@ -30,4 +42,126 @@ services:
       delivery-db:
         condition: service_healthy
     environment:
-      PG_HOST: delivery-db
+      PG_HOST: delivery-db 
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.2
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_SERVERS: zookeeper:2888:3888
+
+  kafka:
+    image: confluentinc/cp-kafka:7.3.2
+    restart: on-failure
+    hostname: kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+      - "9998:9999"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:19092,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092,DOCKER://host.docker.internal:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,DOCKER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_BROKER_ID: 1
+      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_JMX_PORT: 9999
+      KAFKA_JMX_HOSTNAME: ${DOCKER_HOST_IP:-127.0.0.1}
+      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
+    depends_on:
+      - zookeeper
+
+  init-kafka:
+    image: confluentinc/cp-kafka:7.3.2
+    restart: on-failure
+    depends_on:
+      - kafka
+    entrypoint: [ '/bin/sh', '-c' ]
+    command: |
+      "
+      # blocks until kafka is reachable
+      kafka-topics --bootstrap-server kafka:29092 --list
+
+      echo -e 'Creating kafka topics'
+      sleep 10 &&
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic stocks.changed --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic basket.confirmed --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic order.status.changed --replication-factor 1 --partitions 1
+
+      echo -e 'Successfully created the following topics:'
+      kafka-topics --bootstrap-server kafka:29092 --list
+      "
+
+  kowl:
+    image: quay.io/cloudhut/kowl:v1.4.0
+    restart: on-failure
+    volumes:
+    - ./kowl_config:/etc/kowl/
+    ports:
+    - "8087:8080"
+    entrypoint: ./kowl --config.filepath=/etc/kowl/config.yaml
+    depends_on:
+      - kafka    
+
+  basket:
+    image: registry.gitlab.com/microarch-ru/ddd-in-practice/microservices/net/basket:latest
+    restart: on-failure
+    environment:
+      "ASPNETCORE_ENVIRONMENT": "Development"
+      "CONNECTION_STRING": "Server=postgres;Port=5432;User Id=username;Password=secret;Database=basket;"
+      "MESSAGE_BROKER_HOST": "kafka:29092"
+      "DISCOUNT_SERVICE_GRPC_HOST": "http://discount:5003"
+      "STOCKS_CHANGED_TOPIC": "stocks.changed"
+      "BASKET_CONFIRMED_TOPIC": "basket.confirmed"
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres
+      - init-kafka
+      - discount
+  
+  discount:
+    image: registry.gitlab.com/microarch-ru/ddd-in-practice/microservices/generic/discount:latest
+    restart: on-failure
+    environment:
+      "ASPNETCORE_ENVIRONMENT": "Development"
+    ports:
+      - "5003:5003"
+      - "8083:8083"
+
+  geo:
+    image: registry.gitlab.com/microarch-ru/ddd-in-practice/microservices/generic/geo:latest
+    restart: on-failure
+    environment:
+      "ASPNETCORE_ENVIRONMENT": "Development"
+    ports:
+      - "5004:5004"
+      - "8084:8084"
+
+  notification:
+    image: registry.gitlab.com/microarch-ru/ddd-in-practice/microservices/generic/notification:latest
+    restart: on-failure
+    environment:
+      "ASPNETCORE_ENVIRONMENT": "Development"
+      "MESSAGE_BROKER_HOST": "kafka:29092"
+    ports:
+      - "8085:8085"
+    depends_on:
+      - kafka
+      - init-kafka
+
+  backoffice:
+    image: registry.gitlab.com/microarch-ru/ddd-in-practice/front-end/backoffice:latest
+    restart: on-failure
+    ports:
+      - "8086:80"

@@ -3,6 +3,7 @@ package app
 import (
 	"log"
 
+	httpv1 "delivery/internal/adapters/in/http/v1"
 	"delivery/internal/adapters/out/postgre"
 	"delivery/internal/adapters/out/postgre/courier_repo"
 	"delivery/internal/adapters/out/postgre/order_repo"
@@ -17,20 +18,30 @@ import (
 	"delivery/internal/core/application/usecases/queries/get_all_uncompleted_orders"
 	"delivery/internal/core/domain/services"
 	"delivery/internal/core/ports"
+	"delivery/internal/crons"
 	"delivery/internal/pkg/closer"
 
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 	"github.com/jmoiron/sqlx"
+	"github.com/robfig/cron/v3"
 )
 
 type serviceProvider struct {
-	pgConfig    *config.PgConfig
-	db          *sqlx.DB
-	trManager   *manager.Manager
-	uowFactory  ports.UnitOfWorkFactory
-	orderRepo   ports.OrderRepo
+	pgConfig   *config.PgConfig
+	httpConfig *config.HttpConfig
+	db         *sqlx.DB
+	trManager  *manager.Manager
+	uowFactory ports.UnitOfWorkFactory
+	orderRepo  ports.OrderRepo
 	courierRepo ports.CourierRepo
+
+	// HTTP
+	httpHandlers *httpv1.DeliveryService
+
+	// Cron Jobs
+	moveCouriersJob  cron.Job
+	assignOrdersJob  cron.Job
 
 	// Domain Services
 	orderDispatcher ports.OrderDispatcher
@@ -181,4 +192,56 @@ func (s *serviceProvider) GetAllUncompletedOrdersHandler() get_all_uncompleted_o
 	}
 
 	return s.getAllUncompletedOrdersHandler
+}
+
+func (s *serviceProvider) HttpConfig() *config.HttpConfig {
+	if s.httpConfig == nil {
+		httpConfig, err := config.NewHttpConfigSearcher().Get()
+		if err != nil {
+			log.Fatalf("failed to get http config: %v", err)
+		}
+
+		s.httpConfig = httpConfig
+	}
+
+	return s.httpConfig
+}
+
+func (s *serviceProvider) HttpHandlers() *httpv1.DeliveryService {
+	if s.httpHandlers == nil {
+		s.httpHandlers = httpv1.NewDeliveryService(
+			s.GetAllCouriersHandler(),
+			s.CreateCourierHandler(),
+			s.GetAllUncompletedOrdersHandler(),
+			s.CreateOrderHandler(),
+		)
+	}
+
+	return s.httpHandlers
+}
+
+// Cron Jobs
+
+func (s *serviceProvider) MoveCouriersJob() cron.Job {
+	if s.moveCouriersJob == nil {
+		job, err := crons.NewMoveCouriersJob(s.MoveCouriersAndCompleteOrderHandler())
+		if err != nil {
+			log.Fatalf("cannot create MoveCouriersJob: %v", err)
+		}
+		s.moveCouriersJob = job
+	}
+
+	return s.moveCouriersJob
+}
+
+func (s *serviceProvider) AssignOrdersJob() cron.Job {
+	if s.assignOrdersJob == nil {
+		job, err := crons.NewAssignOrdersJob(s.AssignOrderHandler())
+		if err != nil {
+			log.Fatalf("cannot create AssignOrdersJob: %v", err)
+		}
+		s.assignOrdersJob = job
+	}
+
+	return s.assignOrdersJob
 }

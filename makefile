@@ -82,3 +82,6 @@ local-down-app:
 
 local-start-app:
 	docker-compose --env-file deploy/env/.env.local -f docker-compose.local.yaml up -d --build
+
+http-gen:
+	oapi-codegen -config configs/server.cfg.yaml https://gitlab.com/microarch-ru/ddd-in-practice/system-design/-/raw/main/services/delivery/contracts/openapi.yml
