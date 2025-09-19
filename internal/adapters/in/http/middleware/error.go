@@ -25,8 +25,8 @@ func ErrorHandlingMiddleware() echo.MiddlewareFunc {
 func handleError(ctx echo.Context, err error) error {
 	// Validation errors -> 400 Bad Request
 	if errors.Is(err, errs.ErrValueIsInvalid) ||
-	   errors.Is(err, errs.ErrCommandIsInvalid) ||
-	   errors.Is(err, errs.ErrQueryIsInvalid) {
+		errors.Is(err, errs.ErrCommandIsInvalid) ||
+		errors.Is(err, errs.ErrQueryIsInvalid) {
 		return ctx.JSON(http.StatusBadRequest, servers.Error{
 			Code:    http.StatusBadRequest,
 			Message: err.Error(),

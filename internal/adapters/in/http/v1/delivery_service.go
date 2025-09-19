@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"log"
 	"net/http"
 
 	"delivery/internal/core/application/usecases/commands/create_courier"
@@ -88,6 +89,7 @@ func (d *DeliveryService) CreateOrder(ctx echo.Context) error {
 
 	err = d.createOrderHandler.Handle(ctx.Request().Context(), command)
 	if err != nil {
+		log.Printf("error creating order: %v", err)
 		return err
 	}
 

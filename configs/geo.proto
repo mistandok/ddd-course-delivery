@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package geo;
+
+option csharp_namespace = "GeoApp.Api";
+option go_package = "geosrv/geopb";
+
+// The Geo service definition.
+service Geo {
+  
+  // Get Geolocation
+  rpc GetGeolocation (GetGeolocationRequest) returns (GetGeolocationReply);
+}
+
+// Request
+message GetGeolocationRequest {
+  string Street = 1;
+}
+
+// Response
+message GetGeolocationReply {
+  Location Location = 1;
+}
+
+// Geolocation
+message Location {
+  int32 x = 1;
+  int32 y = 2;
+}
+
+message ErrorResponse {
+  string text = 1;
+}
