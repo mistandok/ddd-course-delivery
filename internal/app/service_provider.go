@@ -29,13 +29,13 @@ import (
 )
 
 type serviceProvider struct {
-	pgConfig   *config.PgConfig
-	httpConfig *config.HttpConfig
-	geoConfig  *config.GeoConfig
-	db         *sqlx.DB
-	trManager  *manager.Manager
-	uowFactory ports.UnitOfWorkFactory
-	orderRepo  ports.OrderRepo
+	pgConfig    *config.PgConfig
+	httpConfig  *config.HttpConfig
+	geoConfig   *config.GeoConfig
+	db          *sqlx.DB
+	trManager   *manager.Manager
+	uowFactory  ports.UnitOfWorkFactory
+	orderRepo   ports.OrderRepo
 	courierRepo ports.CourierRepo
 
 	// External clients
@@ -45,8 +45,8 @@ type serviceProvider struct {
 	httpHandlers *httpv1.DeliveryService
 
 	// Cron Jobs
-	moveCouriersJob  cron.Job
-	assignOrdersJob  cron.Job
+	moveCouriersJob cron.Job
+	assignOrdersJob cron.Job
 
 	// Domain Services
 	orderDispatcher ports.OrderDispatcher
