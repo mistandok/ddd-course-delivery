@@ -16,6 +16,10 @@ type HttpConfigSearcher interface {
 	Get() (*HttpConfig, error)
 }
 
+type GeoConfigSearcher interface {
+	Get() (*GeoConfig, error)
+}
+
 func Load(path string) error {
 	err := godotenv.Load(path)
 	if err != nil {
@@ -49,6 +53,14 @@ func (cfg *HttpConfig) Address() string {
 	return fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
 }
 
+type GeoConfig struct {
+	Host string
+}
+
+func (cfg *GeoConfig) Address() string {
+	return cfg.Host
+}
+
 type envHttpConfigSearcher struct{}
 
 func NewHttpConfigSearcher() HttpConfigSearcher {
@@ -74,5 +86,22 @@ func (e *envHttpConfigSearcher) Get() (*HttpConfig, error) {
 	return &HttpConfig{
 		Host: host,
 		Port: port,
+	}, nil
+}
+
+type envGeoConfigSearcher struct{}
+
+func NewGeoConfigSearcher() GeoConfigSearcher {
+	return &envGeoConfigSearcher{}
+}
+
+func (e *envGeoConfigSearcher) Get() (*GeoConfig, error) {
+	host := os.Getenv("GEO_SERVICE_GRPC_HOST")
+	if host == "" {
+		host = "localhost:8081"
+	}
+
+	return &GeoConfig{
+		Host: host,
 	}, nil
 }
