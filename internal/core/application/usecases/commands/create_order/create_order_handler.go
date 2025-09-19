@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"delivery/internal/core/domain/model/order"
-	"delivery/internal/core/domain/model/shared_kernel"
 	"delivery/internal/core/ports"
 	"delivery/internal/pkg/errs"
 )
@@ -18,10 +17,14 @@ var _ CreateOrderHandler = (*createOrderHandler)(nil)
 
 type createOrderHandler struct {
 	uowFactory ports.UnitOfWorkFactory
+	geoClient  ports.GeoClient
 }
 
-func NewCreateOrderHandler(uowFactory ports.UnitOfWorkFactory) CreateOrderHandler {
-	return &createOrderHandler{uowFactory: uowFactory}
+func NewCreateOrderHandler(uowFactory ports.UnitOfWorkFactory, geoClient ports.GeoClient) CreateOrderHandler {
+	return &createOrderHandler{
+		uowFactory: uowFactory,
+		geoClient:  geoClient,
+	}
 }
 
 func (h *createOrderHandler) Handle(ctx context.Context, command CreateOrderCommand) error {
@@ -32,13 +35,12 @@ func (h *createOrderHandler) Handle(ctx context.Context, command CreateOrderComm
 	uow := h.uowFactory.NewUOW()
 
 	err := uow.Do(ctx, func(ctx context.Context) error {
-		// TODO: потом перейдем на другой способ генерации локации
-		randomLocation, uowErr := shared_kernel.NewRandomLocation()
+		location, uowErr := h.geoClient.GetGeolocation(command.Street())
 		if uowErr != nil {
 			return uowErr
 		}
 
-		order, uowErr := order.NewOrder(command.OrderID(), randomLocation, command.Volume())
+		order, uowErr := order.NewOrder(command.OrderID(), location, command.Volume())
 		if uowErr != nil {
 			return uowErr
 		}

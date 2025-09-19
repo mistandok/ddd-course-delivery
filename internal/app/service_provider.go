@@ -143,7 +143,7 @@ func (s *serviceProvider) OrderDispatcher() ports.OrderDispatcher {
 
 func (s *serviceProvider) CreateOrderHandler() create_order.CreateOrderHandler {
 	if s.createOrderHandler == nil {
-		s.createOrderHandler = create_order.NewCreateOrderHandler(s.UOWFactory())
+		s.createOrderHandler = create_order.NewCreateOrderHandler(s.UOWFactory(), s.GeoClient())
 	}
 
 	return s.createOrderHandler
