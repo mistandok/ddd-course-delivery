@@ -8,7 +8,9 @@ import (
 
 	"delivery/internal/adapters/out/postgre"
 	"delivery/internal/core/application/usecases/commands/create_order"
+	"delivery/internal/core/domain/model/shared_kernel"
 	"delivery/internal/core/ports"
+	"delivery/internal/core/ports/mocks"
 	"delivery/internal/pkg/testcnts"
 
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
@@ -17,12 +19,14 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 var dbURL string
 var uowFactory ports.UnitOfWorkFactory
 var handler GetAllUncompletedOrdersHandler
 var createOrderHandler create_order.CreateOrderHandler
+var geoClient ports.GeoClient
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
@@ -48,11 +52,23 @@ func TestMain(m *testing.M) {
 
 	uowFactory = postgre.NewUnitOfWorkFactory(db, trManager, trmsqlx.DefaultCtxGetter)
 	handler = NewGetAllUncompletedOrdersHandler(db, trmsqlx.DefaultCtxGetter)
-	createOrderHandler = create_order.NewCreateOrderHandler(uowFactory)
+
+	// Setup mock GeoClient for integration tests
+	mockGeoClient := setupMockGeoClient()
+	geoClient = mockGeoClient
+	createOrderHandler = create_order.NewCreateOrderHandler(uowFactory, geoClient)
 
 	dbURL = containerDBURL
 
 	os.Exit(m.Run())
+}
+
+func setupMockGeoClient() *mocks.GeoClient {
+	mockGeoClient := &mocks.GeoClient{}
+	// Return a fixed location for any street in integration tests
+	location, _ := shared_kernel.NewLocation(5, 5)
+	mockGeoClient.On("GetGeolocation", mock.Anything).Return(location, nil)
+	return mockGeoClient
 }
 
 func setupDbEntities(dbURL string) (*sqlx.DB, *manager.Manager) {

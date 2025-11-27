@@ -4,6 +4,7 @@ import (
 	"log"
 
 	httpv1 "delivery/internal/adapters/in/http/v1"
+	"delivery/internal/adapters/out/grpc/geo"
 	"delivery/internal/adapters/out/postgre"
 	"delivery/internal/adapters/out/postgre/courier_repo"
 	"delivery/internal/adapters/out/postgre/order_repo"
@@ -28,20 +29,24 @@ import (
 )
 
 type serviceProvider struct {
-	pgConfig   *config.PgConfig
-	httpConfig *config.HttpConfig
-	db         *sqlx.DB
-	trManager  *manager.Manager
-	uowFactory ports.UnitOfWorkFactory
-	orderRepo  ports.OrderRepo
+	pgConfig    *config.PgConfig
+	httpConfig  *config.HttpConfig
+	geoConfig   *config.GeoConfig
+	db          *sqlx.DB
+	trManager   *manager.Manager
+	uowFactory  ports.UnitOfWorkFactory
+	orderRepo   ports.OrderRepo
 	courierRepo ports.CourierRepo
+
+	// External clients
+	geoClient ports.GeoClient
 
 	// HTTP
 	httpHandlers *httpv1.DeliveryService
 
 	// Cron Jobs
-	moveCouriersJob  cron.Job
-	assignOrdersJob  cron.Job
+	moveCouriersJob cron.Job
+	assignOrdersJob cron.Job
 
 	// Domain Services
 	orderDispatcher ports.OrderDispatcher
@@ -138,7 +143,7 @@ func (s *serviceProvider) OrderDispatcher() ports.OrderDispatcher {
 
 func (s *serviceProvider) CreateOrderHandler() create_order.CreateOrderHandler {
 	if s.createOrderHandler == nil {
-		s.createOrderHandler = create_order.NewCreateOrderHandler(s.UOWFactory())
+		s.createOrderHandler = create_order.NewCreateOrderHandler(s.UOWFactory(), s.GeoClient())
 	}
 
 	return s.createOrderHandler
@@ -207,6 +212,19 @@ func (s *serviceProvider) HttpConfig() *config.HttpConfig {
 	return s.httpConfig
 }
 
+func (s *serviceProvider) GeoConfig() *config.GeoConfig {
+	if s.geoConfig == nil {
+		geoConfig, err := config.NewGeoConfigSearcher().Get()
+		if err != nil {
+			log.Fatalf("failed to get geo config: %v", err)
+		}
+
+		s.geoConfig = geoConfig
+	}
+
+	return s.geoConfig
+}
+
 func (s *serviceProvider) HttpHandlers() *httpv1.DeliveryService {
 	if s.httpHandlers == nil {
 		s.httpHandlers = httpv1.NewDeliveryService(
@@ -244,4 +262,18 @@ func (s *serviceProvider) AssignOrdersJob() cron.Job {
 	}
 
 	return s.assignOrdersJob
+}
+
+// External Clients
+
+func (s *serviceProvider) GeoClient() ports.GeoClient {
+	if s.geoClient == nil {
+		geoHost := s.GeoConfig().Address()
+		client, closerFunc := geo.NewGeoClient(geoHost)
+
+		closer.Add(closerFunc)
+		s.geoClient = client
+	}
+
+	return s.geoClient
 }

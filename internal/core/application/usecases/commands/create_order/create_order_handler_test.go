@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"delivery/internal/core/domain/model/shared_kernel"
 	"delivery/internal/core/ports/mocks"
 	"delivery/internal/pkg/errs"
 
@@ -16,10 +17,11 @@ import (
 func TestCreateOrderHandler_Handle_SuccessfulOrderCreation(t *testing.T) {
 	// Arrange
 	mockOrderRepo := setupSuccessfulOrderRepo(t)
+	mockGeoClient := setupSuccessfulGeoClient(t)
 	mockUoW := setupSuccessfulUoW(t, mockOrderRepo)
 	mockUoWFactory := setupUoWFactory(t, mockUoW)
 
-	handler := NewCreateOrderHandler(mockUoWFactory)
+	handler := NewCreateOrderHandler(mockUoWFactory, mockGeoClient)
 	command := createValidCommand()
 
 	// Act
@@ -32,7 +34,8 @@ func TestCreateOrderHandler_Handle_SuccessfulOrderCreation(t *testing.T) {
 func TestCreateOrderHandler_Handle_InvalidCommand(t *testing.T) {
 	// Arrange
 	mockUoWFactory := mocks.NewUnitOfWorkFactory(t)
-	handler := NewCreateOrderHandler(mockUoWFactory)
+	mockGeoClient := mocks.NewGeoClient(t)
+	handler := NewCreateOrderHandler(mockUoWFactory, mockGeoClient)
 	command := createInvalidCommand()
 
 	// Act
@@ -47,10 +50,11 @@ func TestCreateOrderHandler_Handle_OrderRepositoryError(t *testing.T) {
 	// Arrange
 	expectedError := errors.New("repository error")
 	mockOrderRepo := setupFailingOrderRepo(t, expectedError)
+	mockGeoClient := setupSuccessfulGeoClient(t)
 	mockUoW := setupSuccessfulUoW(t, mockOrderRepo)
 	mockUoWFactory := setupUoWFactory(t, mockUoW)
 
-	handler := NewCreateOrderHandler(mockUoWFactory)
+	handler := NewCreateOrderHandler(mockUoWFactory, mockGeoClient)
 	command := createValidCommand()
 
 	// Act
@@ -66,9 +70,32 @@ func TestCreateOrderHandler_Handle_UnitOfWorkDoError(t *testing.T) {
 	expectedError := errors.New("uow error")
 	mockUoW := setupFailingUoW(t, expectedError)
 	mockUoWFactory := setupUoWFactory(t, mockUoW)
+	mockGeoClient := mocks.NewGeoClient(t)
 
-	handler := NewCreateOrderHandler(mockUoWFactory)
+	handler := NewCreateOrderHandler(mockUoWFactory, mockGeoClient)
 	command := createValidCommand()
+
+	// Act
+	err := handler.Handle(context.Background(), command)
+
+	// Assert
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, expectedError)
+}
+
+func TestCreateOrderHandler_Handle_GeoClientError(t *testing.T) {
+	// Arrange
+	expectedError := errors.New("geo service error")
+	mockGeoClient := setupFailingGeoClient(t, expectedError)
+	mockUoW := mocks.NewUnitOfWork(t)
+	mockUoWFactory := setupUoWFactory(t, mockUoW)
+
+	handler := NewCreateOrderHandler(mockUoWFactory, mockGeoClient)
+	command := createValidCommand()
+
+	mockUoW.On("Do", mock.Anything, mock.Anything).Return(func(ctx context.Context, fn func(context.Context) error) error {
+		return fn(ctx)
+	})
 
 	// Act
 	err := handler.Handle(context.Background(), command)
@@ -81,20 +108,20 @@ func TestCreateOrderHandler_Handle_UnitOfWorkDoError(t *testing.T) {
 // Helper functions
 func setupSuccessfulOrderRepo(t *testing.T) *mocks.OrderRepo {
 	mockOrderRepo := mocks.NewOrderRepo(t)
-	mockOrderRepo.EXPECT().Add(mock.Anything, mock.Anything).Return(nil)
+	mockOrderRepo.On("Add", mock.Anything, mock.Anything).Return(nil)
 	return mockOrderRepo
 }
 
 func setupFailingOrderRepo(t *testing.T, expectedError error) *mocks.OrderRepo {
 	mockOrderRepo := mocks.NewOrderRepo(t)
-	mockOrderRepo.EXPECT().Add(mock.Anything, mock.Anything).Return(expectedError)
+	mockOrderRepo.On("Add", mock.Anything, mock.Anything).Return(expectedError)
 	return mockOrderRepo
 }
 
 func setupSuccessfulUoW(t *testing.T, orderRepo *mocks.OrderRepo) *mocks.UnitOfWork {
 	mockUoW := mocks.NewUnitOfWork(t)
-	mockUoW.EXPECT().OrderRepo().Return(orderRepo)
-	mockUoW.EXPECT().Do(mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+	mockUoW.On("OrderRepo").Return(orderRepo)
+	mockUoW.On("Do", mock.Anything, mock.Anything).Return(func(ctx context.Context, fn func(context.Context) error) error {
 		return fn(ctx)
 	})
 	return mockUoW
@@ -102,13 +129,13 @@ func setupSuccessfulUoW(t *testing.T, orderRepo *mocks.OrderRepo) *mocks.UnitOfW
 
 func setupFailingUoW(t *testing.T, expectedError error) *mocks.UnitOfWork {
 	mockUoW := mocks.NewUnitOfWork(t)
-	mockUoW.EXPECT().Do(mock.Anything, mock.Anything).Return(expectedError)
+	mockUoW.On("Do", mock.Anything, mock.Anything).Return(expectedError)
 	return mockUoW
 }
 
 func setupUoWFactory(t *testing.T, uow *mocks.UnitOfWork) *mocks.UnitOfWorkFactory {
 	mockUoWFactory := mocks.NewUnitOfWorkFactory(t)
-	mockUoWFactory.EXPECT().NewUOW().Return(uow)
+	mockUoWFactory.On("NewUOW").Return(uow)
 	return mockUoWFactory
 }
 
@@ -124,4 +151,17 @@ func createInvalidCommand() CreateOrderCommand {
 		volume:  10,
 		isValid: false,
 	}
+}
+
+func setupSuccessfulGeoClient(t *testing.T) *mocks.GeoClient {
+	mockGeoClient := mocks.NewGeoClient(t)
+	location, _ := shared_kernel.NewLocation(5, 5)
+	mockGeoClient.On("GetGeolocation", mock.Anything).Return(location, nil)
+	return mockGeoClient
+}
+
+func setupFailingGeoClient(t *testing.T, expectedError error) *mocks.GeoClient {
+	mockGeoClient := mocks.NewGeoClient(t)
+	mockGeoClient.On("GetGeolocation", mock.Anything).Return(shared_kernel.Location{}, expectedError)
+	return mockGeoClient
 }
