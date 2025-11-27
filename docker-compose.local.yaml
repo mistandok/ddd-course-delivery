@@ -21,18 +21,6 @@ services:
       retries: 5
       start_period: 10s 
    
-  postgres:
-    image: postgres:13.3
-    container_name: postgres
-    environment:
-      POSTGRES_USER: "username"
-      POSTGRES_PASSWORD: "secret"
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./init-db:/docker-entrypoint-initdb.d
-    command: [ "postgres", "-c", "log_statement=mod" ]
-
   migrator:
     build:
       dockerfile: deploy/dockerfiles/migrator.Dockerfile
@@ -63,7 +51,7 @@ services:
     ports:
       - "9092:9092"
       - "29092:29092"
-      - "9998:9999"
+      - "9999:9999"
     environment:
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:19092,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092,DOCKER://host.docker.internal:29092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,DOCKER:PLAINTEXT
@@ -94,9 +82,9 @@ services:
 
       echo -e 'Creating kafka topics'
       sleep 10 &&
-      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic stocks.changed --replication-factor 1 --partitions 1
-      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic basket.confirmed --replication-factor 1 --partitions 1
-      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic order.status.changed --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic stocks.events --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic baskets.events --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic orders.events --replication-factor 1 --partitions 1
 
       echo -e 'Successfully created the following topics:'
       kafka-topics --bootstrap-server kafka:29092 --list
@@ -113,22 +101,28 @@ services:
     depends_on:
       - kafka    
 
-  basket:
-    image: registry.gitlab.com/microarch-ru/ddd-in-practice/microservices/net/basket:latest
+  postgres:
+    image: postgres:13.3
+    container_name: postgres
+    environment:
+      POSTGRES_USER: "username"
+      POSTGRES_PASSWORD: "secret"
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init-db:/docker-entrypoint-initdb.d
+    command: [ "postgres", "-c", "log_statement=mod" ]
+
+  fake-basket:
+    image: registry.gitlab.com/microarch-ru/ddd-in-practice/microservices/generic/fake-basket:latest
     restart: on-failure
     environment:
       "ASPNETCORE_ENVIRONMENT": "Development"
-      "CONNECTION_STRING": "Server=postgres;Port=5432;User Id=username;Password=secret;Database=basket;"
       "MESSAGE_BROKER_HOST": "kafka:29092"
-      "DISCOUNT_SERVICE_GRPC_HOST": "http://discount:5003"
-      "STOCKS_CHANGED_TOPIC": "stocks.changed"
-      "BASKET_CONFIRMED_TOPIC": "basket.confirmed"
+      "STOCKS_EVENTS_TOPIC": "stocks.events"
+      "BASKETS_EVENTS_TOPIC": "baskets.events"
     ports:
-      - "8081:8081"
-    depends_on:
-      - postgres
-      - init-kafka
-      - discount
+      - "8089:8089"
   
   discount:
     image: registry.gitlab.com/microarch-ru/ddd-in-practice/microservices/generic/discount:latest
@@ -147,18 +141,6 @@ services:
     ports:
       - "5004:5004"
       - "8084:8084"
-
-  notification:
-    image: registry.gitlab.com/microarch-ru/ddd-in-practice/microservices/generic/notification:latest
-    restart: on-failure
-    environment:
-      "ASPNETCORE_ENVIRONMENT": "Development"
-      "MESSAGE_BROKER_HOST": "kafka:29092"
-    ports:
-      - "8085:8085"
-    depends_on:
-      - kafka
-      - init-kafka
 
   backoffice:
     image: registry.gitlab.com/microarch-ru/ddd-in-practice/front-end/backoffice:latest

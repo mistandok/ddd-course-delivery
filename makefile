@@ -46,6 +46,11 @@ generate-basket-queue:
 	@curl -s -o configs/basket_confirmed.proto https://gitlab.com/microarch-ru/ddd-in-practice/system-design/-/raw/main/services/basket/contracts/basket_confirmed.proto
 	@protoc --go_out=internal/generated --go-grpc_out=internal/generated configs/basket_confirmed.proto
 
+generate-basket-events:
+	@rm -rf internal/generated/events/baskets_eventspb
+	@curl -s -o configs/baskets_events.proto https://gitlab.com/microarch-ru/ddd-in-practice/system-design/-/raw/main/services/basket/contracts/baskets_events.proto
+	@protoc --go_out=internal/generated --go-grpc_out=internal/generated configs/baskets_events.proto
+
 generate-order-queue:
 	@rm -rf internal/generated/queues/orderstatuschangedpb
 	@curl -s -o configs/order_status_changed.proto https://gitlab.com/microarch-ru/ddd-in-practice/system-design/-/raw/main/services/delivery/contracts/order_status_changed.proto
