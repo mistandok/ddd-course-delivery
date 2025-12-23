@@ -20,6 +20,10 @@ type GeoConfigSearcher interface {
 	Get() (*GeoConfig, error)
 }
 
+type KafkaConfigSearcher interface {
+	Get() (*KafkaConfig, error)
+}
+
 func Load(path string) error {
 	err := godotenv.Load(path)
 	if err != nil {
@@ -27,6 +31,13 @@ func Load(path string) error {
 	}
 
 	return nil
+}
+
+type KafkaConfig struct {
+	Host                 string
+	ConsumerGroup        string
+	BasketConfirmedTopic string
+	OrderChangedTopic    string
 }
 
 type PgConfig struct {
