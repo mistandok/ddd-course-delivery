@@ -9,7 +9,7 @@ import (
 const (
 	kafkaHost                 = "KAFKA_HOST"
 	kafkaConsumerGroup        = "KAFKA_CONSUMER_GROUP"
-	kafkaBasketConfirmedTopic = "KAFKA_BASKET_CONFRIMED_TOPIC"
+	kafkaBasketConfirmedTopic = "KAFKA_BASKET_CONFIRMED_TOPIC"
 	kafkaOrderChangedTopic    = "KAFKA_ORDER_CHANGED_TOPIC"
 )
 

@@ -4,6 +4,8 @@ import (
 	"log"
 
 	httpv1 "delivery/internal/adapters/in/http/v1"
+	"delivery/internal/adapters/in/kafka"
+	kafkaCommon "delivery/internal/adapters/in/kafka/common"
 	"delivery/internal/adapters/out/grpc/geo"
 	"delivery/internal/adapters/out/postgre"
 	"delivery/internal/adapters/out/postgre/courier_repo"
@@ -20,6 +22,7 @@ import (
 	"delivery/internal/core/domain/services"
 	"delivery/internal/core/ports"
 	"delivery/internal/crons"
+	"delivery/internal/generated/queues/basketpb"
 	"delivery/internal/pkg/closer"
 
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
@@ -32,6 +35,7 @@ type serviceProvider struct {
 	pgConfig    *config.PgConfig
 	httpConfig  *config.HttpConfig
 	geoConfig   *config.GeoConfig
+	kafkaConfig *config.KafkaConfig
 	db          *sqlx.DB
 	trManager   *manager.Manager
 	uowFactory  ports.UnitOfWorkFactory
@@ -47,6 +51,10 @@ type serviceProvider struct {
 	// Cron Jobs
 	moveCouriersJob cron.Job
 	assignOrdersJob cron.Job
+
+	// Kafka Consumers
+	basketConfirmedConsumerGroup *kafkaCommon.KafkaConsumer[basketpb.BasketConfirmedIntegrationEvent]
+	basketConfirmedEventHandler  *kafka.BasketConfirmedEventHandler
 
 	// Domain Services
 	orderDispatcher ports.OrderDispatcher
@@ -276,4 +284,42 @@ func (s *serviceProvider) GeoClient() ports.GeoClient {
 	}
 
 	return s.geoClient
+}
+
+func (s *serviceProvider) KafkaConfig() *config.KafkaConfig {
+	if s.kafkaConfig == nil {
+		kafkaConfig, err := env.NewKafkaCfgSearcher().Get()
+		if err != nil {
+			log.Fatalf("failed to get kafka config: %v", err)
+		}
+
+		s.kafkaConfig = kafkaConfig
+	}
+	return s.kafkaConfig
+}
+
+func (s *serviceProvider) BasketConfirmedEventHandler() *kafka.BasketConfirmedEventHandler {
+	if s.basketConfirmedEventHandler == nil {
+		s.basketConfirmedEventHandler = kafka.NewBasketConfirmedEventHandler(s.CreateOrderHandler())
+	}
+
+	return s.basketConfirmedEventHandler
+}
+
+func (s *serviceProvider) BasketConfirmedConsumerGroup() *kafkaCommon.KafkaConsumer[basketpb.BasketConfirmedIntegrationEvent] {
+	if s.basketConfirmedConsumerGroup == nil {
+		consumerGroup, err := kafkaCommon.NewKafkaConsumerGroup[basketpb.BasketConfirmedIntegrationEvent](
+			[]string{s.KafkaConfig().Host},
+			s.KafkaConfig().ConsumerGroup,
+			s.KafkaConfig().BasketConfirmedTopic,
+			s.BasketConfirmedEventHandler(),
+		)
+		if err != nil {
+			log.Fatalf("failed to create basket confirmed consumer group: %v", err)
+		}
+
+		s.basketConfirmedConsumerGroup = consumerGroup
+	}
+
+	return s.basketConfirmedConsumerGroup
 }
