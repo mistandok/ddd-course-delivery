@@ -53,7 +53,7 @@ type serviceProvider struct {
 	assignOrdersJob cron.Job
 
 	// Kafka Consumers
-	basketConfirmedConsumerGroup *kafkaCommon.KafkaConsumer[basketpb.BasketConfirmedIntegrationEvent]
+	basketConfirmedConsumerGroup *kafkaCommon.KafkaConsumer[*basketpb.BasketConfirmedIntegrationEvent]
 	basketConfirmedEventHandler  *kafka.BasketConfirmedEventHandler
 
 	// Domain Services
@@ -306,9 +306,9 @@ func (s *serviceProvider) BasketConfirmedEventHandler() *kafka.BasketConfirmedEv
 	return s.basketConfirmedEventHandler
 }
 
-func (s *serviceProvider) BasketConfirmedConsumerGroup() *kafkaCommon.KafkaConsumer[basketpb.BasketConfirmedIntegrationEvent] {
+func (s *serviceProvider) BasketConfirmedConsumerGroup() *kafkaCommon.KafkaConsumer[*basketpb.BasketConfirmedIntegrationEvent] {
 	if s.basketConfirmedConsumerGroup == nil {
-		consumerGroup, err := kafkaCommon.NewKafkaConsumerGroup[basketpb.BasketConfirmedIntegrationEvent](
+		consumerGroup, err := kafkaCommon.NewKafkaConsumerGroup[*basketpb.BasketConfirmedIntegrationEvent](
 			[]string{s.KafkaConfig().Host},
 			s.KafkaConfig().ConsumerGroup,
 			s.KafkaConfig().BasketConfirmedTopic,

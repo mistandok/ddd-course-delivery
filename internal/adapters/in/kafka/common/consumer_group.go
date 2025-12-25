@@ -2,24 +2,25 @@ package common
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
+	"reflect"
 
 	"delivery/internal/pkg/errs"
 
 	"github.com/IBM/sarama"
+	"google.golang.org/protobuf/proto"
 )
 
 var ErrIncorrectMessage = errors.New("incorrect message format")
 
-type EventHandler[TEvent any] interface {
+type EventHandler[TEvent proto.Message] interface {
 	Handle(ctx context.Context, event TEvent) error
 }
 
 // KafkaConsumer объединяет consumer и handler в одной структуре
-type KafkaConsumer[TEvent any] struct {
+type KafkaConsumer[TEvent proto.Message] struct {
 	topic         string
 	consumerGroup sarama.ConsumerGroup
 	domainHandler EventHandler[TEvent]
@@ -27,7 +28,7 @@ type KafkaConsumer[TEvent any] struct {
 	cancel        context.CancelFunc
 }
 
-func NewKafkaConsumerGroup[TEvent any](
+func NewKafkaConsumerGroup[TEvent proto.Message](
 	brokers []string,
 	group string,
 	topic string,
@@ -95,8 +96,11 @@ func (c *KafkaConsumer[TEvent]) ConsumeClaim(session sarama.ConsumerGroupSession
 		log.Printf("Received: topic = %s, partition = %d, offset = %d, key = %s, value = %s\n",
 			message.Topic, message.Partition, message.Offset, string(message.Key), string(message.Value))
 
-		var event TEvent
-		if err := json.Unmarshal(message.Value, &event); err != nil {
+		eventType := reflect.TypeOf((*TEvent)(nil)).Elem()
+		eventValue := reflect.New(eventType.Elem())
+		event := eventValue.Interface().(TEvent)
+
+		if err := proto.Unmarshal(message.Value, event); err != nil {
 			return fmt.Errorf("%w: %v", ErrIncorrectMessage, err)
 		}
 

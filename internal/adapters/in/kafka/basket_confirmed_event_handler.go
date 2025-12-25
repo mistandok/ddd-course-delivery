@@ -15,7 +15,7 @@ type BasketConfirmedEventHandler struct {
 	createOrderHandler create_order.CreateOrderHandler
 }
 
-func (h *BasketConfirmedEventHandler) Handle(ctx context.Context, event basketpb.BasketConfirmedIntegrationEvent) error {
+func (h *BasketConfirmedEventHandler) Handle(ctx context.Context, event *basketpb.BasketConfirmedIntegrationEvent) error {
 	orderID := uuid.New()
 
 	cmd, err := create_order.NewCreateOrderCommand(
