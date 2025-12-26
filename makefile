@@ -56,6 +56,11 @@ generate-order-queue:
 	@curl -s -o configs/order_status_changed.proto https://gitlab.com/microarch-ru/ddd-in-practice/system-design/-/raw/main/services/delivery/contracts/order_status_changed.proto
 	@protoc --go_out=internal/generated --go-grpc_out=internal/generated configs/order_status_changed.proto
 
+generate-delivery-events:
+	@rm -rf internal/generated/events/orders_eventspb
+	@curl -s -o configs/orders_events.proto https://gitlab.com/microarch-ru/ddd-in-practice/system-design/-/raw/main/services/delivery/contracts/orders_events.proto?ref_type=heads
+	@protoc --go_out=internal/generated --go-grpc_out=internal/generated configs/orders_events.proto
+
 
 # Команды для работы с миграциями
 
