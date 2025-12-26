@@ -3,6 +3,7 @@ package order
 import (
 	"testing"
 
+	"delivery/internal/core/domain/model/event"
 	"delivery/internal/core/domain/model/shared_kernel"
 
 	"github.com/google/uuid"
@@ -25,6 +26,25 @@ func Test_Create_Order_With_Valid_Parameters(t *testing.T) {
 	assert.Equal(t, volume, order.Volume())
 	assert.Equal(t, StatusCreated, order.Status())
 	assert.Nil(t, order.CourierID())
+}
+
+func Test_NewOrder_Raises_OrderCreated_Event(t *testing.T) {
+	// Arrange
+	orderID := uuid.New()
+	location, _ := shared_kernel.NewRandomLocation()
+	volume := int64(10)
+
+	// Act
+	order, err := NewOrder(orderID, location, volume)
+
+	// Assert
+	assert.NoError(t, err)
+	events := order.DomainEvents()
+	assert.Len(t, events, 1)
+
+	orderCreatedEvent, ok := events[0].(*event.OrderCreated)
+	assert.True(t, ok, "Expected event to be *event.OrderCreated")
+	assert.Equal(t, orderID, orderCreatedEvent.GetOrderID())
 }
 
 func Test_Cannot_Create_Order_With_Empty_OrderID(t *testing.T) {
@@ -144,6 +164,30 @@ func Test_Complete_Assigned_Order(t *testing.T) {
 	assert.Equal(t, courierID, *order.CourierID())
 }
 
+func Test_Complete_Raises_OrderCompleted_Event(t *testing.T) {
+	// Arrange
+	order := newValidOrder(t)
+	courierID := uuid.New()
+	orderID := order.ID()
+
+	// Act
+	_ = order.Assign(courierID)
+	err := order.Complete()
+
+	// Assert
+	assert.NoError(t, err)
+	events := order.DomainEvents()
+	assert.Len(t, events, 2)
+
+	orderCreatedEvent, ok := events[0].(*event.OrderCreated)
+	assert.True(t, ok, "Expected first event to be *event.OrderCreated")
+	assert.Equal(t, orderID, orderCreatedEvent.GetOrderID())
+
+	orderCompletedEvent, ok := events[1].(*event.OrderCompleted)
+	assert.True(t, ok, "Expected second event to be *event.OrderCompleted")
+	assert.Equal(t, orderID, orderCompletedEvent.GetOrderID())
+}
+
 func Test_Cannot_Complete_Created_Order_Without_Assignment(t *testing.T) {
 	// Arrange
 	order := newValidOrder(t)
@@ -157,7 +201,23 @@ func Test_Cannot_Complete_Created_Order_Without_Assignment(t *testing.T) {
 	assert.Nil(t, order.CourierID())
 }
 
-func Test_Complete_Already_Completed_Order_Is_Allowed(t *testing.T) {
+func Test_Failed_Complete_Does_Not_Raise_OrderCompleted_Event(t *testing.T) {
+	// Arrange
+	order := newValidOrder(t)
+
+	// Act
+	err := order.Complete()
+
+	// Assert
+	assert.Error(t, err)
+	events := order.DomainEvents()
+	assert.Len(t, events, 1)
+
+	_, ok := events[0].(*event.OrderCreated)
+	assert.True(t, ok, "Expected event to be *event.OrderCreated")
+}
+
+func Test_Cannot_Complete_Already_Completed_Order(t *testing.T) {
 	// Arrange
 	order := newValidOrder(t)
 	courierID := uuid.New()
@@ -168,7 +228,7 @@ func Test_Complete_Already_Completed_Order_Is_Allowed(t *testing.T) {
 	err := order.Complete()
 
 	// Assert
-	assert.NoError(t, err)
+	assert.Error(t, err)
 	assert.Equal(t, StatusCompleted, order.Status())
 }
 
