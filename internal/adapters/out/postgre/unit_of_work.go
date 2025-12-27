@@ -7,6 +7,7 @@ import (
 	"delivery/internal/adapters/out/postgre/order_repo"
 	"delivery/internal/core/ports"
 	"delivery/internal/pkg/ddd"
+	eventPublisher "delivery/internal/pkg/event_publisher"
 
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
@@ -29,7 +30,7 @@ type UnitOfWork struct {
 	txGetter       TxGetter
 	orderRepo      ports.OrderRepo
 	courierRepo    ports.CourierRepo
-	eventPublisher ddd.EventPublisher
+	eventPublisher eventPublisher.EventPublisher
 }
 
 func NewUnitOfWork(

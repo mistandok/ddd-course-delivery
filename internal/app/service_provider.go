@@ -25,7 +25,7 @@ import (
 	"delivery/internal/crons"
 	"delivery/internal/generated/queues/basketpb"
 	"delivery/internal/pkg/closer"
-	"delivery/internal/pkg/ddd"
+	eventPublisher "delivery/internal/pkg/event_publisher"
 
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
@@ -77,7 +77,7 @@ type serviceProvider struct {
 	orderCompletedHandler *eventHandlers.OrderCompletedHandler
 
 	// Event Publishers
-	eventPublisher ddd.EventPublisher
+	eventPublisher eventPublisher.EventPublisher
 }
 
 func newServiceProvider() *serviceProvider {
@@ -347,9 +347,9 @@ func (s *serviceProvider) OrderCompletedHandler() *eventHandlers.OrderCompletedH
 	return s.orderCompletedHandler
 }
 
-func (s *serviceProvider) EventPublisher() ddd.EventPublisher {
+func (s *serviceProvider) EventPublisher() eventPublisher.EventPublisher {
 	if s.eventPublisher == nil {
-		s.eventPublisher = ddd.NewEventPublisher()
+		s.eventPublisher = eventPublisher.NewEventPublisher()
 	}
 	return s.eventPublisher
 }
