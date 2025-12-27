@@ -11,6 +11,7 @@ import (
 	"delivery/internal/core/domain/model/shared_kernel"
 	"delivery/internal/core/ports"
 	"delivery/internal/core/ports/mocks"
+	"delivery/internal/pkg/ddd"
 	"delivery/internal/pkg/testcnts"
 
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
@@ -27,6 +28,13 @@ var uowFactory ports.UnitOfWorkFactory
 var handler GetAllUncompletedOrdersHandler
 var createOrderHandler create_order.CreateOrderHandler
 var geoClient ports.GeoClient
+
+type fakeEventPublisher struct {
+}
+
+func (f *fakeEventPublisher) Publish(ctx context.Context, event ddd.DomainEvent) error {
+	return nil
+}
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
@@ -50,7 +58,8 @@ func TestMain(m *testing.M) {
 		}
 	}()
 
-	uowFactory = postgre.NewUnitOfWorkFactory(db, trManager, trmsqlx.DefaultCtxGetter)
+	eventPublisher := &fakeEventPublisher{}
+	uowFactory = postgre.NewUnitOfWorkFactory(db, trManager, trmsqlx.DefaultCtxGetter, eventPublisher)
 	handler = NewGetAllUncompletedOrdersHandler(db, trmsqlx.DefaultCtxGetter)
 
 	// Setup mock GeoClient for integration tests

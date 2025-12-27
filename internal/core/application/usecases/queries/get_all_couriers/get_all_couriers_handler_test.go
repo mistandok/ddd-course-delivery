@@ -9,6 +9,7 @@ import (
 	"delivery/internal/adapters/out/postgre"
 	"delivery/internal/core/application/usecases/commands/create_courier"
 	"delivery/internal/core/ports"
+	"delivery/internal/pkg/ddd"
 	"delivery/internal/pkg/testcnts"
 
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
@@ -22,6 +23,13 @@ var dbURL string
 var uowFactory ports.UnitOfWorkFactory
 var handler GetAllCouriersHandler
 var createCourierHandler create_courier.CreateCourierHandler
+
+type fakeEventPublisher struct {
+}
+
+func (f *fakeEventPublisher) Publish(ctx context.Context, event ddd.DomainEvent) error {
+	return nil
+}
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
@@ -45,7 +53,8 @@ func TestMain(m *testing.M) {
 		}
 	}()
 
-	uowFactory = postgre.NewUnitOfWorkFactory(db, trManager, trmsqlx.DefaultCtxGetter)
+	eventPublisher := &fakeEventPublisher{}
+	uowFactory = postgre.NewUnitOfWorkFactory(db, trManager, trmsqlx.DefaultCtxGetter, eventPublisher)
 	handler = NewGetAllCouriersHandler(db, trmsqlx.DefaultCtxGetter)
 	createCourierHandler = create_courier.NewCreateCourierHandler(uowFactory)
 

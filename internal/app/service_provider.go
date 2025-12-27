@@ -12,6 +12,7 @@ import (
 	"delivery/internal/adapters/out/postgre/order_repo"
 	"delivery/internal/config"
 	"delivery/internal/config/env"
+	eventHandlers "delivery/internal/core/application/event_handlers"
 	"delivery/internal/core/application/usecases/commands/add_storage_place"
 	"delivery/internal/core/application/usecases/commands/assign_order"
 	"delivery/internal/core/application/usecases/commands/create_courier"
@@ -24,6 +25,7 @@ import (
 	"delivery/internal/crons"
 	"delivery/internal/generated/queues/basketpb"
 	"delivery/internal/pkg/closer"
+	"delivery/internal/pkg/ddd"
 
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
@@ -69,6 +71,13 @@ type serviceProvider struct {
 	// Query Handlers
 	getAllCouriersHandler          get_all_couriers.GetAllCouriersHandler
 	getAllUncompletedOrdersHandler get_all_uncompleted_orders.GetAllUncompletedOrdersHandler
+
+	// Event Handlers
+	orderCreatedHandler   *eventHandlers.OrderCreatedHandler
+	orderCompletedHandler *eventHandlers.OrderCompletedHandler
+
+	// Event Publishers
+	eventPublisher ddd.EventPublisher
 }
 
 func newServiceProvider() *serviceProvider {
@@ -115,7 +124,7 @@ func (s *serviceProvider) TRManager() *manager.Manager {
 
 func (s *serviceProvider) OrderRepo() ports.OrderRepo {
 	if s.orderRepo == nil {
-		s.orderRepo = order_repo.NewRepository(s.DB(), trmsqlx.DefaultCtxGetter)
+		s.orderRepo = order_repo.NewRepository(s.DB(), trmsqlx.DefaultCtxGetter, s.EventPublisher())
 	}
 
 	return s.orderRepo
@@ -131,7 +140,7 @@ func (s *serviceProvider) CourierRepo() ports.CourierRepo {
 
 func (s *serviceProvider) UOWFactory() ports.UnitOfWorkFactory {
 	if s.uowFactory == nil {
-		s.uowFactory = postgre.NewUnitOfWorkFactory(s.DB(), s.TRManager(), trmsqlx.DefaultCtxGetter)
+		s.uowFactory = postgre.NewUnitOfWorkFactory(s.DB(), s.TRManager(), trmsqlx.DefaultCtxGetter, s.EventPublisher())
 	}
 
 	return s.uowFactory
@@ -322,4 +331,25 @@ func (s *serviceProvider) BasketConfirmedConsumerGroup() *kafkaCommon.KafkaConsu
 	}
 
 	return s.basketConfirmedConsumerGroup
+}
+
+func (s *serviceProvider) OrderCreatedHandler() *eventHandlers.OrderCreatedHandler {
+	if s.orderCreatedHandler == nil {
+		s.orderCreatedHandler = eventHandlers.NewOrderCreatedHandler()
+	}
+	return s.orderCreatedHandler
+}
+
+func (s *serviceProvider) OrderCompletedHandler() *eventHandlers.OrderCompletedHandler {
+	if s.orderCompletedHandler == nil {
+		s.orderCompletedHandler = eventHandlers.NewOrderCompletedHandler()
+	}
+	return s.orderCompletedHandler
+}
+
+func (s *serviceProvider) EventPublisher() ddd.EventPublisher {
+	if s.eventPublisher == nil {
+		s.eventPublisher = ddd.NewEventPublisher()
+	}
+	return s.eventPublisher
 }

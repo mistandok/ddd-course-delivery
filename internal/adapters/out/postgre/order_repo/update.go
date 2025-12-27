@@ -54,7 +54,7 @@ func (r *Repository) Update(ctx context.Context, order *modelOrder.Order) error 
 		return err
 	}
 
-	return nil
+	return r.publishDomainEvents(ctx, tx, order)
 }
 
 func (r *Repository) orderExists(ctx context.Context, tx trmsqlx.Tr, id uuid.UUID) (bool, error) {
