@@ -345,14 +345,14 @@ func (s *serviceProvider) BasketConfirmedConsumerGroup() *kafkaConsumerCommon.Ka
 
 func (s *serviceProvider) OrderCreatedHandler() *eventHandlers.OrderCreatedHandler {
 	if s.orderCreatedHandler == nil {
-		s.orderCreatedHandler = eventHandlers.NewOrderCreatedHandler()
+		s.orderCreatedHandler = eventHandlers.NewOrderCreatedHandler(s.OrderCreatedProducer())
 	}
 	return s.orderCreatedHandler
 }
 
 func (s *serviceProvider) OrderCompletedHandler() *eventHandlers.OrderCompletedHandler {
 	if s.orderCompletedHandler == nil {
-		s.orderCompletedHandler = eventHandlers.NewOrderCompletedHandler()
+		s.orderCompletedHandler = eventHandlers.NewOrderCompletedHandler(s.OrderCompletedProducer())
 	}
 	return s.orderCompletedHandler
 }
