@@ -13,10 +13,10 @@ func NewOrderCompletedMapper() *OrderCompletedMapper {
 	return &OrderCompletedMapper{}
 }
 
-func (m *OrderCompletedMapper) Map(domainEvent *event.OrderCompleted) *common.IntegrationEvent[*orderpb.OrderCompletedIntegrationEvent] {
+func (m *OrderCompletedMapper) Map(domainEvent *event.OrderCompleted) common.IntegrationEvent[*orderpb.OrderCompletedIntegrationEvent] {
 	event := &orderpb.OrderCompletedIntegrationEvent{
 		OrderId: domainEvent.GetOrderID().String(),
 	}
 
-	return common.NewIntegrationEvent[*orderpb.OrderCompletedIntegrationEvent](event, domainEvent.GetID().String())
+	return *common.NewIntegrationEvent[*orderpb.OrderCompletedIntegrationEvent](event, domainEvent.GetID().String())
 }

@@ -39,7 +39,7 @@ type FromDomainToIntegrationMapper[TDomainEvent ddd.DomainEvent, TIntegrationEve
 }
 
 // Продюсер для отправки событий в Kafka
-type kafkaProducer[TDomainEvent ddd.DomainEvent, TIntegrationEvent proto.Message] struct {
+type KafkaProducer[TDomainEvent ddd.DomainEvent, TIntegrationEvent proto.Message] struct {
 	topic       string
 	producer    sarama.SyncProducer
 	eventMapper FromDomainToIntegrationMapper[TDomainEvent, TIntegrationEvent]
@@ -66,18 +66,18 @@ func NewKafkaProducer[
 		return nil, fmt.Errorf("create sync producer: %w", err)
 	}
 
-	return &kafkaProducer[TDomainEvent, TIntegrationEvent]{
+	return &KafkaProducer[TDomainEvent, TIntegrationEvent]{
 		topic:       topic,
 		eventMapper: eventMapper,
 		producer:    producer,
 	}, nil
 }
 
-func (p *kafkaProducer[TDomainEvent, TIntegrationEvent]) Close() error {
+func (p *KafkaProducer[TDomainEvent, TIntegrationEvent]) Close() error {
 	return p.producer.Close()
 }
 
-func (p *kafkaProducer[TDomainEvent, TIntegrationEvent]) Publish(ctx context.Context, domainEvent TDomainEvent) error {
+func (p *KafkaProducer[TDomainEvent, TIntegrationEvent]) Publish(ctx context.Context, domainEvent TDomainEvent) error {
 	integrationEvent := p.eventMapper.Map(domainEvent)
 
 	bytes, err := json.Marshal(integrationEvent.Event())

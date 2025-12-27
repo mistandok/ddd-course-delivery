@@ -5,8 +5,10 @@ import (
 
 	httpv1 "delivery/internal/adapters/in/http/v1"
 	"delivery/internal/adapters/in/kafka"
-	kafkaCommon "delivery/internal/adapters/in/kafka/common"
+	kafkaConsumerCommon "delivery/internal/adapters/in/kafka/common"
 	"delivery/internal/adapters/out/grpc/geo"
+	kafkaProducerCommon "delivery/internal/adapters/out/kafka/common"
+	"delivery/internal/adapters/out/kafka/mapper"
 	"delivery/internal/adapters/out/postgre"
 	"delivery/internal/adapters/out/postgre/courier_repo"
 	"delivery/internal/adapters/out/postgre/order_repo"
@@ -20,10 +22,12 @@ import (
 	"delivery/internal/core/application/usecases/commands/move_couriers_and_complete_order"
 	"delivery/internal/core/application/usecases/queries/get_all_couriers"
 	"delivery/internal/core/application/usecases/queries/get_all_uncompleted_orders"
+	"delivery/internal/core/domain/model/event"
 	"delivery/internal/core/domain/services"
 	"delivery/internal/core/ports"
 	"delivery/internal/crons"
 	"delivery/internal/generated/queues/basketpb"
+	"delivery/internal/generated/queues/orderpb"
 	"delivery/internal/pkg/closer"
 	eventPublisher "delivery/internal/pkg/event_publisher"
 
@@ -55,8 +59,14 @@ type serviceProvider struct {
 	assignOrdersJob cron.Job
 
 	// Kafka Consumers
-	basketConfirmedConsumerGroup *kafkaCommon.KafkaConsumer[*basketpb.BasketConfirmedIntegrationEvent]
+	basketConfirmedConsumerGroup *kafkaConsumerCommon.KafkaConsumer[*basketpb.BasketConfirmedIntegrationEvent]
 	basketConfirmedEventHandler  *kafka.BasketConfirmedEventHandler
+
+	// Kafka Producers
+	orderCreatedProducer                  ports.EventProducer[*event.OrderCreated]
+	orderCompletedProducer                ports.EventProducer[*event.OrderCompleted]
+	fromOrderCreatedToIntegrationMapper   *mapper.OrderCreatedMapper
+	fromOrderCompletedToIntegrationMapper *mapper.OrderCompletedMapper
 
 	// Domain Services
 	orderDispatcher ports.OrderDispatcher
@@ -315,9 +325,9 @@ func (s *serviceProvider) BasketConfirmedEventHandler() *kafka.BasketConfirmedEv
 	return s.basketConfirmedEventHandler
 }
 
-func (s *serviceProvider) BasketConfirmedConsumerGroup() *kafkaCommon.KafkaConsumer[*basketpb.BasketConfirmedIntegrationEvent] {
+func (s *serviceProvider) BasketConfirmedConsumerGroup() *kafkaConsumerCommon.KafkaConsumer[*basketpb.BasketConfirmedIntegrationEvent] {
 	if s.basketConfirmedConsumerGroup == nil {
-		consumerGroup, err := kafkaCommon.NewKafkaConsumerGroup[*basketpb.BasketConfirmedIntegrationEvent](
+		consumerGroup, err := kafkaConsumerCommon.NewKafkaConsumerGroup[*basketpb.BasketConfirmedIntegrationEvent](
 			[]string{s.KafkaConfig().Host},
 			s.KafkaConfig().ConsumerGroup,
 			s.KafkaConfig().BasketConfirmedTopic,
@@ -352,4 +362,56 @@ func (s *serviceProvider) EventPublisher() eventPublisher.EventPublisher {
 		s.eventPublisher = eventPublisher.NewEventPublisher()
 	}
 	return s.eventPublisher
+}
+
+func (s *serviceProvider) FromOrderCreatedToIntegrationMapper() *mapper.OrderCreatedMapper {
+	if s.fromOrderCreatedToIntegrationMapper == nil {
+		s.fromOrderCreatedToIntegrationMapper = mapper.NewOrderCreatedMapper()
+	}
+	return s.fromOrderCreatedToIntegrationMapper
+}
+
+func (s *serviceProvider) FromOrderCompletedToIntegrationMapper() *mapper.OrderCompletedMapper {
+	if s.fromOrderCompletedToIntegrationMapper == nil {
+		s.fromOrderCompletedToIntegrationMapper = mapper.NewOrderCompletedMapper()
+	}
+	return s.fromOrderCompletedToIntegrationMapper
+}
+
+func (s *serviceProvider) OrderCreatedProducer() ports.EventProducer[*event.OrderCreated] {
+	if s.orderCreatedProducer == nil {
+		producer, err := kafkaProducerCommon.NewKafkaProducer[
+			*event.OrderCreated,
+			*orderpb.OrderCreatedIntegrationEvent,
+			*mapper.OrderCreatedMapper,
+		](
+			[]string{s.KafkaConfig().Host},
+			s.KafkaConfig().OrderChangedTopic,
+			s.FromOrderCreatedToIntegrationMapper(),
+		)
+		if err != nil {
+			log.Fatalf("failed to create order created producer: %v", err)
+		}
+		s.orderCreatedProducer = producer
+	}
+	return s.orderCreatedProducer
+}
+
+func (s *serviceProvider) OrderCompletedProducer() ports.EventProducer[*event.OrderCompleted] {
+	if s.orderCompletedProducer == nil {
+		producer, err := kafkaProducerCommon.NewKafkaProducer[
+			*event.OrderCompleted,
+			*orderpb.OrderCompletedIntegrationEvent,
+			*mapper.OrderCompletedMapper,
+		](
+			[]string{s.KafkaConfig().Host},
+			s.KafkaConfig().OrderChangedTopic,
+			s.FromOrderCompletedToIntegrationMapper(),
+		)
+		if err != nil {
+			log.Fatalf("failed to create order completed producer: %v", err)
+		}
+		s.orderCompletedProducer = producer
+	}
+	return s.orderCompletedProducer
 }
