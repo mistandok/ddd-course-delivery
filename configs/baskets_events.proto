@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package basket_event;
+
+option csharp_namespace = "Queues.Basket";
+option java_package = "queues.basket";
+option java_outer_classname = "BasketEventsProto";
+option go_package = "queues/basketpb";
+
+import "google/protobuf/timestamp.proto";
+
+message BasketConfirmedIntegrationEvent {
+  // Metadata
+  string event_id = 1;
+  string event_type = 2;
+  google.protobuf.Timestamp occurred_at = 3;
+
+  // Payload
+  string basket_id = 4;
+  Address address = 5;
+  repeated Item items = 6;
+  DeliveryPeriod delivery_period = 7;
+  int32 volume = 8;
+}
+
+message BasketCancelledIntegrationEvent {
+  // Metadata
+  string event_id = 1;
+  string event_type = 2;
+  google.protobuf.Timestamp occurred_at = 3;
+
+  // Payload
+  string basket_id = 4;
+  string reason = 5;
+}
+
+message Address {
+  string country = 1;
+  string city = 2;
+  string street = 3;
+  string house = 4;
+  string apartment = 5;
+}
+
+message Item {
+  string id = 1;
+  string good_id = 2;
+  string title = 3;
+  double price = 4;
+  int32 quantity = 5;
+}
+
+message DeliveryPeriod {
+  int32 from = 1;
+  int32 to = 2;
+}

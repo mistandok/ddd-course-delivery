@@ -51,6 +51,7 @@ func (a *App) Run() error {
 		{action: a.runGRPCServer, errMsg: "ошибка при запуске GRPC сервера"},
 		{action: a.runHttpServer, errMsg: "ошибка при запуске HTTP сервера"},
 		{action: a.runCronScheduler, errMsg: "ошибка при запуске Cron планировщика"},
+		{action: a.runKafkaConsumerGroup, errMsg: "ошибка при запуске Kafka consumer group"},
 	}
 
 	wg := sync.WaitGroup{}
@@ -167,6 +168,11 @@ func (a *App) runCronScheduler() error {
 	log.Printf("Starting Cron scheduler")
 	a.cronScheduler.Start()
 	select {} // Block forever
+}
+
+func (a *App) runKafkaConsumerGroup() error {
+	log.Printf("Starting Kafka consumer group")
+	return a.serviceProvider.BasketConfirmedConsumerGroup().Consume()
 }
 
 func (a *App) runHttpServer() error {
