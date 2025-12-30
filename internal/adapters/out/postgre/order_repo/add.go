@@ -34,5 +34,5 @@ func (r *Repository) Add(ctx context.Context, order *modelOrder.Order) error {
 		return err
 	}
 
-	return r.publishDomainEvents(ctx, tx, order)
+	return r.publishDomainEvents(ctx, order)
 }

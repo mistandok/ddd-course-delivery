@@ -12,6 +12,7 @@ import (
 	"delivery/internal/core/domain/model/event"
 	"delivery/internal/generated/servers"
 	"delivery/internal/pkg/closer"
+	"delivery/internal/pkg/outbox/mappers"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -81,6 +82,7 @@ func (a *App) initDeps(ctx context.Context) error {
 	initDepFunctions := []func(context.Context) error{
 		a.initConfig,
 		a.initServiceProvider,
+		a.registerEvents,
 		a.initMediator,
 		a.initHttpServer,
 		a.initCronScheduler,
@@ -141,10 +143,29 @@ func (a *App) initHttpServer(ctx context.Context) error {
 	return nil
 }
 
+func (a *App) registerEvents(ctx context.Context) error {
+	if err := a.serviceProvider.EventRegistry().RegisterDomainEvent(&event.OrderCreated{},
+		mappers.NewOrderCreatedToJSONMapper(),
+		mappers.NewOrderCreatedFromJSONMapper(),
+	); err != nil {
+		return err
+	}
+
+	if err := a.serviceProvider.EventRegistry().RegisterDomainEvent(&event.OrderCompleted{},
+		mappers.NewOrderCompletedToJSONMapper(),
+		mappers.NewOrderCompletedFromJSONMapper(),
+	); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (a *App) initMediator(_ context.Context) error {
 	if err := mediatr.RegisterNotificationHandler[*event.OrderCreated](a.serviceProvider.OrderCreatedHandler()); err != nil {
 		return err
 	}
+
 	if err := mediatr.RegisterNotificationHandler[*event.OrderCompleted](a.serviceProvider.OrderCompletedHandler()); err != nil {
 		return err
 	}

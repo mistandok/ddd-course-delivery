@@ -11,6 +11,7 @@ import (
 	"delivery/internal/adapters/out/kafka/mapper"
 	"delivery/internal/adapters/out/postgre"
 	"delivery/internal/adapters/out/postgre/courier_repo"
+	"delivery/internal/adapters/out/postgre/event_publisher"
 	"delivery/internal/adapters/out/postgre/order_repo"
 	"delivery/internal/config"
 	"delivery/internal/config/env"
@@ -30,6 +31,7 @@ import (
 	"delivery/internal/generated/queues/orderpb"
 	"delivery/internal/pkg/closer"
 	eventPublisher "delivery/internal/pkg/event_publisher"
+	"delivery/internal/pkg/outbox"
 
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
@@ -87,7 +89,10 @@ type serviceProvider struct {
 	orderCompletedHandler *eventHandlers.OrderCompletedHandler
 
 	// Event Publishers
-	eventPublisher eventPublisher.EventPublisher
+	eventPublisher ports.EventPublisher
+
+	// Event Registry
+	eventRegistry outbox.EventRegistry
 }
 
 func newServiceProvider() *serviceProvider {
@@ -359,7 +364,7 @@ func (s *serviceProvider) OrderCompletedHandler() *eventHandlers.OrderCompletedH
 
 func (s *serviceProvider) EventPublisher() eventPublisher.EventPublisher {
 	if s.eventPublisher == nil {
-		s.eventPublisher = eventPublisher.NewEventPublisher()
+		s.eventPublisher = event_publisher.NewEventPublisher(trmsqlx.DefaultCtxGetter, s.EventRegistry())
 	}
 	return s.eventPublisher
 }
@@ -414,4 +419,16 @@ func (s *serviceProvider) OrderCompletedProducer() ports.EventProducer[*event.Or
 		s.orderCompletedProducer = producer
 	}
 	return s.orderCompletedProducer
+}
+
+func (s *serviceProvider) EventRegistry() outbox.EventRegistry {
+	if s.eventRegistry == nil {
+		eventRegistry, err := outbox.NewEventRegistry()
+		if err != nil {
+			log.Fatalf("failed to create event registry: %v", err)
+		}
+		s.eventRegistry = eventRegistry
+	}
+
+	return s.eventRegistry
 }
