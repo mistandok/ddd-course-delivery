@@ -11,8 +11,8 @@ import (
 	"delivery/internal/adapters/out/kafka/mapper"
 	"delivery/internal/adapters/out/postgre"
 	"delivery/internal/adapters/out/postgre/courier_repo"
-	"delivery/internal/adapters/out/postgre/event_publisher"
 	"delivery/internal/adapters/out/postgre/order_repo"
+	outboxRepo "delivery/internal/adapters/out/postgre/outbox"
 	"delivery/internal/config"
 	"delivery/internal/config/env"
 	eventHandlers "delivery/internal/core/application/event_handlers"
@@ -364,7 +364,7 @@ func (s *serviceProvider) OrderCompletedHandler() *eventHandlers.OrderCompletedH
 
 func (s *serviceProvider) EventPublisher() eventPublisher.EventPublisher {
 	if s.eventPublisher == nil {
-		s.eventPublisher = event_publisher.NewEventPublisher(trmsqlx.DefaultCtxGetter, s.EventRegistry())
+		s.eventPublisher = outboxRepo.NewRepository(trmsqlx.DefaultCtxGetter, s.EventRegistry())
 	}
 	return s.eventPublisher
 }
