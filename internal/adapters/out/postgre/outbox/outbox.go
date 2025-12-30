@@ -9,6 +9,7 @@ import (
 	"github.com/Masterminds/squirrel"
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 )
 
 const (
@@ -29,16 +30,17 @@ type eventEncoder interface {
 }
 
 type Repository struct {
+	db           *sqlx.DB
 	txGetter     txGetter
 	eventEncoder eventEncoder
 }
 
-func NewRepository(txGetter txGetter, eventEncoder eventEncoder) *Repository {
-	return &Repository{txGetter: txGetter, eventEncoder: eventEncoder}
+func NewRepository(db *sqlx.DB, txGetter txGetter, eventEncoder eventEncoder) *Repository {
+	return &Repository{db: db, txGetter: txGetter, eventEncoder: eventEncoder}
 }
 
 func (e *Repository) Publish(ctx context.Context, event ddd.DomainEvent) error {
-	tx := e.txGetter.DefaultTrOrDB(ctx, nil)
+	tx := e.txGetter.DefaultTrOrDB(ctx, e.db)
 
 	outboxMessage, err := e.eventEncoder.EncodeDomainEvent(event)
 	if err != nil {
@@ -65,7 +67,7 @@ func (e *Repository) Publish(ctx context.Context, event ddd.DomainEvent) error {
 }
 
 func (e *Repository) ProcessMessage(ctx context.Context, messageID uuid.UUID) error {
-	tx := e.txGetter.DefaultTrOrDB(ctx, nil)
+	tx := e.txGetter.DefaultTrOrDB(ctx, e.db)
 
 	query, args, err := squirrel.Update(tableNameOutbox).
 		Where(squirrel.Eq{columnId: messageID}).
@@ -85,7 +87,7 @@ func (e *Repository) ProcessMessage(ctx context.Context, messageID uuid.UUID) er
 }
 
 func (e *Repository) GetUnprocessedMessages(ctx context.Context, limit uint64) ([]outbox.Message, error) {
-	tx := e.txGetter.DefaultTrOrDB(ctx, nil)
+	tx := e.txGetter.DefaultTrOrDB(ctx, e.db)
 
 	query, args, err := squirrel.Select(columnId, columnEventName, columnEventPayload, columnOccurredAt, columnProcessedAt).
 		From(tableNameOutbox).

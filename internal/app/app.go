@@ -191,6 +191,11 @@ func (a *App) initCronScheduler(ctx context.Context) error {
 		return err
 	}
 
+	_, err = a.cronScheduler.AddJob("@every 10s", a.serviceProvider.OutboxMessagesJob())
+	if err != nil {
+		return err
+	}
+
 	closer.Add(func() error {
 		ctx := a.cronScheduler.Stop()
 		<-ctx.Done()
