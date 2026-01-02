@@ -3,7 +3,9 @@ package order
 import (
 	"errors"
 
+	"delivery/internal/core/domain/model/event"
 	"delivery/internal/core/domain/model/shared_kernel"
+	"delivery/internal/pkg/ddd"
 	"delivery/internal/pkg/errs"
 
 	"github.com/google/uuid"
@@ -16,6 +18,8 @@ type Order struct {
 	volume    int64
 	status    Status
 	version   int64
+
+	domainEvents []ddd.DomainEvent
 }
 
 func NewOrder(orderID uuid.UUID, location shared_kernel.Location, volume int64) (*Order, error) {
@@ -29,12 +33,16 @@ func NewOrder(orderID uuid.UUID, location shared_kernel.Location, volume int64) 
 		return nil, errs.NewValueIsRequiredError("volume")
 	}
 
-	return &Order{
+	order := &Order{
 		id:       orderID,
 		location: location,
 		volume:   volume,
 		status:   StatusCreated,
-	}, nil
+	}
+
+	order.raiseDomainEvent(event.NewOrderCreated(orderID))
+
+	return order, nil
 }
 
 // LoadOrderFromRepo - загружает заказ из репозитория. Можно использовать ТОЛЬКО для загрузки из репозитория.
@@ -73,6 +81,12 @@ func (o *Order) Version() int64 {
 	return o.version
 }
 
+func (o *Order) DomainEvents() []ddd.DomainEvent {
+	events := make([]ddd.DomainEvent, len(o.domainEvents))
+	copy(events, o.domainEvents)
+	return events
+}
+
 func (o *Order) Assign(courierID uuid.UUID) error {
 	if err := o.switchToStatus(StatusAssigned); err != nil {
 		return err
@@ -88,14 +102,15 @@ func (o *Order) Complete() error {
 		return err
 	}
 
+	o.raiseDomainEvent(event.NewOrderCompleted(o.id))
+
 	return nil
 }
 
 func (o *Order) switchToStatus(status Status) error {
 	statusTransition := map[Status]Status{
-		StatusCreated:   StatusAssigned,
-		StatusAssigned:  StatusCompleted,
-		StatusCompleted: StatusCompleted,
+		StatusCreated:  StatusAssigned,
+		StatusAssigned: StatusCompleted,
 	}
 
 	allowedNextStatus, ok := statusTransition[o.status]
@@ -110,4 +125,8 @@ func (o *Order) switchToStatus(status Status) error {
 	o.status = status
 
 	return nil
+}
+
+func (o *Order) raiseDomainEvent(event ddd.DomainEvent) {
+	o.domainEvents = append(o.domainEvents, event)
 }

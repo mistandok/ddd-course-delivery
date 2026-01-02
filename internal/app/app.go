@@ -9,12 +9,15 @@ import (
 
 	httpmiddleware "delivery/internal/adapters/in/http/middleware"
 	"delivery/internal/config"
+	"delivery/internal/core/domain/model/event"
 	"delivery/internal/generated/servers"
 	"delivery/internal/pkg/closer"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/robfig/cron/v3"
+
+	"github.com/mehdihadeli/go-mediatr"
 )
 
 const (
@@ -78,6 +81,7 @@ func (a *App) initDeps(ctx context.Context) error {
 	initDepFunctions := []func(context.Context) error{
 		a.initConfig,
 		a.initServiceProvider,
+		a.initMediator,
 		a.initHttpServer,
 		a.initCronScheduler,
 	}
@@ -133,6 +137,17 @@ func (a *App) initHttpServer(ctx context.Context) error {
 		defer cancel()
 		return a.httpServer.Shutdown(shutdownCtx)
 	})
+
+	return nil
+}
+
+func (a *App) initMediator(_ context.Context) error {
+	if err := mediatr.RegisterNotificationHandler[*event.OrderCreated](a.serviceProvider.OrderCreatedHandler()); err != nil {
+		return err
+	}
+	if err := mediatr.RegisterNotificationHandler[*event.OrderCompleted](a.serviceProvider.OrderCompletedHandler()); err != nil {
+		return err
+	}
 
 	return nil
 }

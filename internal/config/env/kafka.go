@@ -32,7 +32,7 @@ func (k *KafkaCfgSearcher) Get() (*config.KafkaConfig, error) {
 
 	basketConfirmedTopic := os.Getenv(kafkaBasketConfirmedTopic)
 	if len(basketConfirmedTopic) == 0 {
-		return nil, errors.New("KAFKA_BASKET_CONFRIMED_TOPIC is not set")
+		return nil, errors.New("KAFKA_BASKET_CONFIRMED_TOPIC is not set")
 	}
 
 	orderChangedTopic := os.Getenv(kafkaOrderChangedTopic)

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"delivery/internal/core/ports"
+	"delivery/internal/pkg/ddd"
 	"delivery/internal/pkg/errs"
 	"delivery/internal/pkg/testcnts"
 
@@ -24,6 +25,13 @@ import (
 
 var dbURL string
 var uow ports.UnitOfWork
+
+type fakeEventPublisher struct {
+}
+
+func (f *fakeEventPublisher) Publish(ctx context.Context, event ddd.DomainEvent) error {
+	return nil
+}
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
@@ -47,7 +55,9 @@ func TestMain(m *testing.M) {
 		}
 	}()
 
-	uow = NewUnitOfWork(db, trManager, trmsqlx.DefaultCtxGetter)
+	eventPublisher := &fakeEventPublisher{}
+
+	uow = NewUnitOfWork(db, trManager, trmsqlx.DefaultCtxGetter, eventPublisher)
 
 	dbURL = containerDBURL
 

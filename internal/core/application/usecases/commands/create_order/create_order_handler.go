@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"delivery/internal/core/domain/model/order"
+	sharedKernel "delivery/internal/core/domain/model/shared_kernel"
 	"delivery/internal/core/ports"
 	"delivery/internal/pkg/errs"
 )
@@ -37,7 +38,10 @@ func (h *createOrderHandler) Handle(ctx context.Context, command CreateOrderComm
 	err := uow.Do(ctx, func(ctx context.Context) error {
 		location, uowErr := h.geoClient.GetGeolocation(command.Street())
 		if uowErr != nil {
-			return uowErr
+			location, uowErr = sharedKernel.NewRandomLocation()
+			if uowErr != nil {
+				return uowErr
+			}
 		}
 
 		order, uowErr := order.NewOrder(command.OrderID(), location, command.Volume())

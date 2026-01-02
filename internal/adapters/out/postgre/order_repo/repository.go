@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"delivery/internal/core/ports"
+	"delivery/internal/pkg/ddd"
 
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 	"github.com/jmoiron/sqlx"
@@ -15,14 +16,20 @@ type txGetter interface {
 	DefaultTrOrDB(ctx context.Context, db trmsqlx.Tr) trmsqlx.Tr
 }
 
-type Repository struct {
-	db       *sqlx.DB
-	txGetter txGetter
+type eventPublisher interface {
+	Publish(ctx context.Context, event ddd.DomainEvent) error
 }
 
-func NewRepository(db *sqlx.DB, txGetter txGetter) *Repository {
+type Repository struct {
+	db             *sqlx.DB
+	txGetter       txGetter
+	eventPublisher eventPublisher
+}
+
+func NewRepository(db *sqlx.DB, txGetter txGetter, eventPublisher eventPublisher) *Repository {
 	return &Repository{
-		db:       db,
-		txGetter: txGetter,
+		db:             db,
+		txGetter:       txGetter,
+		eventPublisher: eventPublisher,
 	}
 }
