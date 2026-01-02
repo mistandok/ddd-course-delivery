@@ -31,6 +31,14 @@ func NewOrderCreated(orderID uuid.UUID) *OrderCreated {
 	}
 }
 
+func LoadOrderCreated(id uuid.UUID, name EventName, orderID uuid.UUID) *OrderCreated {
+	return &OrderCreated{
+		id:      id,
+		name:    name,
+		orderID: orderID,
+	}
+}
+
 func (e *OrderCreated) GetID() uuid.UUID {
 	return e.id
 }
@@ -54,6 +62,14 @@ func NewOrderCompleted(orderID uuid.UUID) *OrderCompleted {
 	return &OrderCompleted{
 		id:      uuid.New(),
 		name:    EventNameOrderCompleted,
+		orderID: orderID,
+	}
+}
+
+func LoadOrderCompleted(id uuid.UUID, name EventName, orderID uuid.UUID) *OrderCompleted {
+	return &OrderCompleted{
+		id:      id,
+		name:    name,
 		orderID: orderID,
 	}
 }
