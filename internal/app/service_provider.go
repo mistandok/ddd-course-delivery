@@ -12,6 +12,7 @@ import (
 	"delivery/internal/adapters/out/postgre"
 	"delivery/internal/adapters/out/postgre/courier_repo"
 	"delivery/internal/adapters/out/postgre/order_repo"
+	outboxRepo "delivery/internal/adapters/out/postgre/outbox"
 	"delivery/internal/config"
 	"delivery/internal/config/env"
 	eventHandlers "delivery/internal/core/application/event_handlers"
@@ -30,6 +31,7 @@ import (
 	"delivery/internal/generated/queues/orderpb"
 	"delivery/internal/pkg/closer"
 	eventPublisher "delivery/internal/pkg/event_publisher"
+	"delivery/internal/pkg/outbox"
 
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
@@ -55,8 +57,9 @@ type serviceProvider struct {
 	httpHandlers *httpv1.DeliveryService
 
 	// Cron Jobs
-	moveCouriersJob cron.Job
-	assignOrdersJob cron.Job
+	moveCouriersJob   cron.Job
+	assignOrdersJob   cron.Job
+	outboxMessagesJob cron.Job
 
 	// Kafka Consumers
 	basketConfirmedConsumerGroup *kafkaConsumerCommon.KafkaConsumer[*basketpb.BasketConfirmedIntegrationEvent]
@@ -87,7 +90,14 @@ type serviceProvider struct {
 	orderCompletedHandler *eventHandlers.OrderCompletedHandler
 
 	// Event Publishers
-	eventPublisher eventPublisher.EventPublisher
+	outboxEventPublisher  ports.EventPublisher
+	mediatrEventPublisher ports.EventPublisher
+
+	// Event Registry
+	eventRegistry outbox.EventRegistry
+
+	// Outbox Repository
+	outboxRepository *outboxRepo.Repository
 }
 
 func newServiceProvider() *serviceProvider {
@@ -134,7 +144,7 @@ func (s *serviceProvider) TRManager() *manager.Manager {
 
 func (s *serviceProvider) OrderRepo() ports.OrderRepo {
 	if s.orderRepo == nil {
-		s.orderRepo = order_repo.NewRepository(s.DB(), trmsqlx.DefaultCtxGetter, s.EventPublisher())
+		s.orderRepo = order_repo.NewRepository(s.DB(), trmsqlx.DefaultCtxGetter, s.OutboxEventPublisher())
 	}
 
 	return s.orderRepo
@@ -150,7 +160,7 @@ func (s *serviceProvider) CourierRepo() ports.CourierRepo {
 
 func (s *serviceProvider) UOWFactory() ports.UnitOfWorkFactory {
 	if s.uowFactory == nil {
-		s.uowFactory = postgre.NewUnitOfWorkFactory(s.DB(), s.TRManager(), trmsqlx.DefaultCtxGetter, s.EventPublisher())
+		s.uowFactory = postgre.NewUnitOfWorkFactory(s.DB(), s.TRManager(), trmsqlx.DefaultCtxGetter, s.OutboxEventPublisher())
 	}
 
 	return s.uowFactory
@@ -291,6 +301,17 @@ func (s *serviceProvider) AssignOrdersJob() cron.Job {
 	return s.assignOrdersJob
 }
 
+func (s *serviceProvider) OutboxMessagesJob() cron.Job {
+	if s.outboxMessagesJob == nil {
+		job, err := crons.NewOutboxMessagesJob(s.MediatrEventPublisher(), s.OutboxRepository(), s.EventRegistry())
+		if err != nil {
+			log.Fatalf("cannot create OutboxMessagesJob: %v", err)
+		}
+		s.outboxMessagesJob = job
+	}
+	return s.outboxMessagesJob
+}
+
 // External Clients
 
 func (s *serviceProvider) GeoClient() ports.GeoClient {
@@ -357,11 +378,18 @@ func (s *serviceProvider) OrderCompletedHandler() *eventHandlers.OrderCompletedH
 	return s.orderCompletedHandler
 }
 
-func (s *serviceProvider) EventPublisher() eventPublisher.EventPublisher {
-	if s.eventPublisher == nil {
-		s.eventPublisher = eventPublisher.NewEventPublisher()
+func (s *serviceProvider) OutboxEventPublisher() eventPublisher.EventPublisher {
+	if s.outboxEventPublisher == nil {
+		s.outboxEventPublisher = s.OutboxRepository()
 	}
-	return s.eventPublisher
+	return s.outboxEventPublisher
+}
+
+func (s *serviceProvider) MediatrEventPublisher() eventPublisher.EventPublisher {
+	if s.mediatrEventPublisher == nil {
+		s.mediatrEventPublisher = eventPublisher.NewEventPublisher()
+	}
+	return s.mediatrEventPublisher
 }
 
 func (s *serviceProvider) FromOrderCreatedToIntegrationMapper() *mapper.OrderCreatedMapper {
@@ -414,4 +442,23 @@ func (s *serviceProvider) OrderCompletedProducer() ports.EventProducer[*event.Or
 		s.orderCompletedProducer = producer
 	}
 	return s.orderCompletedProducer
+}
+
+func (s *serviceProvider) EventRegistry() outbox.EventRegistry {
+	if s.eventRegistry == nil {
+		eventRegistry, err := outbox.NewEventRegistry()
+		if err != nil {
+			log.Fatalf("failed to create event registry: %v", err)
+		}
+		s.eventRegistry = eventRegistry
+	}
+
+	return s.eventRegistry
+}
+
+func (s *serviceProvider) OutboxRepository() *outboxRepo.Repository {
+	if s.outboxRepository == nil {
+		s.outboxRepository = outboxRepo.NewRepository(s.DB(), trmsqlx.DefaultCtxGetter, s.EventRegistry())
+	}
+	return s.outboxRepository
 }
